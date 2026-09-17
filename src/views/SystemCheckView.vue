@@ -1095,8 +1095,8 @@ right: calc(37% + 115px);
 
   justify-self: start;
 
-transform: translateX(-250px);
-  zoom: 1.08;
+transform: none;
+  zoom: 1;
 
 }
 
@@ -1256,7 +1256,7 @@ transform: translateX(-250px);
 
 .check-card {
   width: 100%;
-  transform: translateX(250px);
+  transform: none;
 
   background: #ffffff;
 

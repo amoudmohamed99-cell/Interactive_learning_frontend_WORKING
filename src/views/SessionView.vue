@@ -1,6 +1,95 @@
 <template>
-  <div class="session-page" :style="{ backgroundImage: `url(${currentBg})` }">
-    <div class="bg-overlay"></div>
+  <div class="session-page">
+    <!-- ═══ Fixed-ratio scene: BG + Avatar + Desk as ONE unit ═══ -->
+    <div class="scene-viewport" :style="{ backgroundImage: `url(${currentBg})` }">
+      <div class="bg-overlay"></div>
+      <video ref="simliVideoRef" autoplay playsinline class="hidden-video" />
+      <audio ref="simliAudioRef" autoplay />
+      <canvas ref="chromaCanvas" class="ahmad-canvas" v-show="simliConnected && !showWelcome"></canvas>
+      <div class="desk-overlay" :style="{ backgroundImage: `url(${currentBg})` }"></div>
+    </div>
+
+    <!-- ═══ Welcome / Instructions Overlay (while Simli loads) ═══ -->
+    <transition name="fade">
+      <div v-if="showWelcome" class="welcome-overlay">
+        <div class="welcome-card">
+
+          <!-- Card Header -->
+          <div class="wc-header">
+            <div class="wc-icon-wrap">
+              <span class="wc-icon">💬</span>
+            </div>
+            <span class="wc-session-tag">
+              SESSION {{ scenarioNumber }}
+            </span>
+          </div>
+
+          <!-- Title -->
+          <h2 class="wc-title">{{ scenarioTitle }}</h2>
+
+          <!-- Description -->
+          <p class="wc-desc">{{ scenarioContext }}</p>
+
+          <!-- Divider -->
+          <div class="wc-divider"></div>
+
+          <!-- Learning Goals -->
+          <div class="wc-goals">
+            <h4 class="wc-goals-title">
+              <span class="wc-goals-icon">🎯</span>
+              Learning Goals
+            </h4>
+            <div
+              v-for="(goal, i) in learningGoals"
+              :key="i"
+              class="wc-goal-item"
+            >
+              <span class="wc-goal-check">✓</span>
+              {{ goal }}
+            </div>
+          </div>
+
+          <!-- Quote -->
+          <div class="wc-quote">
+            <span class="wc-quote-mark">"</span>
+            <div>
+              <p>{{ motivationalQuote }}</p>
+              <span class="wc-quote-author">— Ahmad</span>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <button
+            @click="dismissWelcome"
+            class="wc-btn"
+            :class="{
+              ready: simliConnected || simliTimedOut,
+              loading: !simliConnected && !simliTimedOut
+            }"
+            :disabled="!simliConnected && !simliTimedOut"
+          >
+            <span v-if="simliConnected || simliTimedOut" class="wc-btn-content">
+              Start Session
+              <span class="wc-btn-arrow">→</span>
+            </span>
+            <span v-else class="wc-btn-content wc-btn-loading">
+              <span class="wc-spinner"></span>
+              Getting your session ready...
+            </span>
+          </button>
+
+          <!-- Footer hint -->
+          <p v-if="simliConnected || simliTimedOut" class="wc-footer-hint">
+            Everything is set. Let's go! 🚀
+          </p>
+          <p v-else class="wc-footer-hint">
+            This will only take a moment
+          </p>
+
+        </div>
+      </div>
+    </transition>
+
 
     <!-- ═══ Top Header Bar ═══ -->
     <header class="top-bar">
@@ -13,6 +102,9 @@
         <span class="phase-badge">📋 {{ phaseLabel }}</span>
       </div>
       <div class="tb-right">
+        <button class="scenario-toggle-btn" @click="showMobileScenario = !showMobileScenario">
+          {{ showMobileScenario ? '✕ إغلاق' : '📋 السيناريو' }}
+        </button>
         <span class="timer-display" :class="{ warning: remainingTotal < 300 }">⏱ {{ formatTime(remainingTotal) }}</span>
         <button class="end-btn" @click="handleEnd">🔴 End Session</button>
       </div>
@@ -69,22 +161,13 @@
         </div>
       </div>
 
-      <!-- CENTER: Ahmad Avatar -->
-      <div class="center-panel">
-        <video ref="simliVideoRef" autoplay playsinline class="hidden-video" />
-        <audio ref="simliAudioRef" autoplay />
-        <canvas ref="chromaCanvas" class="ahmad-canvas" v-show="simliConnected"></canvas>
-        <div class="desk-foreground" :style="{ backgroundImage: `url(${currentBg})` }"></div>
-        <!-- Loading while Simli connects -->
-        <div v-if="!simliConnected" class="ahmad-loading">
-          <div class="loading-avatar">🎙️</div>
-          <p>Connecting to Ahmad...</p>
-        </div>
-      </div>
+      <!-- CENTER: spacer for layout -->
+      <div class="center-panel"></div>
 
       <!-- RIGHT Panel: Scenario Card -->
-      <div class="right-panel">
+      <div class="right-panel" :class="{ 'mobile-open': showMobileScenario }">
         <div class="scenario-card">
+          <div class="mobile-scenario-close" @click="showMobileScenario = false">✕ إغلاق</div>
           <span class="sc-tag">Today's Scenario</span>
           <h2 class="sc-title">{{ scenarioTitle }}</h2>
           <p class="sc-desc">{{ scenarioContext }}</p>
@@ -116,9 +199,7 @@
 
     <!-- ═══ Bottom Control Bar ═══ -->
     <footer class="control-bar">
-      <div class="cb-left-area">
-        <button class="cb-btn" @click="toggleTyping" :class="{ active: showTypingInput }">⌨️ Type instead</button>
-      </div>
+      <div class="cb-left-area"></div>
 
       <div v-if="isRecording" class="waveform">
         <div v-for="i in 6" :key="'l'+i" class="wave-bar" :style="{ animationDelay: (i * 0.06) + 's' }"></div>
@@ -179,15 +260,34 @@ const feedbackCard = ref(null)
 const ahmadLastMessage = ref('')
 const showTypingInput = ref(false)
 const typedMessage = ref('')
+const showMobileScenario = ref(false)
 let currentAudio = null // Track current audio to prevent overlap
 
-// Simli
+// Simli Avatar Composable
 const { videoRef: simliVideoRef, audioRef: simliAudioRef, isConnected: simliConnected, isAvatarSpeaking: simliSpeaking, startAvatar, stopAvatar, sendAudio: simliSendAudio } = useSimli()
 const simliReady = ref(false)
+const simliTimedOut = ref(false)
 
 // Chroma Key
 const chromaCanvas = ref(null)
 const { startChromaKey, stopChromaKey } = useChromaKey()
+
+// Welcome overlay — shown while Simli loads and user reads instructions
+const showWelcome = ref(true)
+let pendingIntro = null // { msg, audio, format }
+
+const dismissWelcome = () => {
+  showWelcome.value = false
+  // Play greeting as soon as user enters session
+  if (pendingIntro) {
+    const { msg, audio, format } = pendingIntro
+    pendingIntro = null
+    // Small delay for fade transition
+    setTimeout(() => {
+      speakAloud(msg, audio, format)
+    }, 300)
+  }
+}
 
 // When Simli connects, start chroma key processing
 watch(simliConnected, (connected) => {
@@ -210,8 +310,10 @@ const remainingTotal = ref(40 * 60)
 const remainingInPhase = ref(5 * 60)
 let timerInterval = null
 
-// Background: always empty scene (Ahmad comes from Simli only)
-const currentBg = computed(() => `/backgrounds/sc0${scenarioNumber.value}.jpg`)
+// Background: always use the scenario background
+const currentBg = computed(() => {
+  return `/backgrounds/sc0${scenarioNumber.value}.jpg`
+})
 
 const phaseLabel = computed(() => {
   const labels = { intro: 'التهيئة', vocab: 'المدخل اللغوي', conversation: 'المحادثة الموجهة', feedback: 'التغذية الراجعة', closing: 'الخلاصة والتأمل' }
@@ -219,7 +321,7 @@ const phaseLabel = computed(() => {
 })
 
 const canRecord = computed(() => {
-  return !ahmadSpeaking.value && status.value !== 'processing' && currentPhase.value === 'conversation'
+  return !ahmadSpeaking.value && status.value !== 'processing' && (currentPhase.value === 'conversation' || currentPhase.value === 'intro')
 })
 
 const micRingClass = computed(() => {
@@ -582,13 +684,18 @@ onMounted(async () => {
 
     updatePhaseState(r.phase)
 
-    // Start Simli avatar
+    // Start Simli avatar (fire-and-forget, it will work when ready)
     startAvatar().then(ok => { simliReady.value = ok })
 
-    // Ahmad greets
-    const introMsg = r.reply || `Hi! I'm Ahmad. Welcome! Today we will practice ${scenario.title || 'speaking English'}. Are you ready?`
+    // Store greeting — will play when welcome is dismissed AND Simli is connected
+    const introMsg = r.reply || r.greeting || `Hi! I'm Ahmad. Welcome! Today we will practice ${scenario.title || 'speaking English'}. Are you ready?`
     ahmadLastMessage.value = introMsg
-    speakAloud(introMsg, r.audio, r.audio_format)
+    pendingIntro = { msg: introMsg, audio: r.audio, format: r.audio_format }
+
+    // Simli connection timeout fallback (unlock button after 8s if network is slow)
+    setTimeout(() => {
+      simliTimedOut.value = true
+    }, 8000)
 
     startTimer()
   } catch (e) {
@@ -624,9 +731,52 @@ const handleEnd = async () => {
 
 <style scoped>
 /* ═══ BASE ═══ */
-.session-page { height: 100vh; display: flex; flex-direction: column; background-size: auto 100%; background-position: center; position: relative; overflow: hidden; font-family: 'Segoe UI', sans-serif; transition: background-image 0.5s ease-in-out; }
-.bg-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.25); z-index: 0; }
-.session-page > * { position: relative; z-index: 1; }
+.session-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Segoe UI', sans-serif;
+  background: #0a1428;
+}
+
+/*
+  SCENE VIEWPORT — the single unified render of the scene.
+  Fixed 16:9 aspect ratio. Covers the viewport like
+  background-size: cover. Background, avatar, and desk
+  are ALL children of this container — they scale as ONE unit.
+*/
+.scene-viewport {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center bottom;
+  transition: background-image 0.5s ease-in-out;
+
+  /* Cover behavior with fixed aspect ratio:
+     The viewport is filled while the 16:9 ratio is preserved.
+     On wide screens the scene matches width (height overflows/crops).
+     On tall screens the scene matches height (width overflows/crops).
+     This is achieved by setting min-width/min-height to 100%
+     of the parent, with the parent overflow:hidden. */
+}
+
+.bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 0;
+}
+
+.session-page > header,
+.session-page > .phase-dots-bar,
+.session-page > .main-area,
+.session-page > footer {
+  position: relative;
+  z-index: 3;
+}
 
 /* ═══ TOP BAR ═══ */
 .top-bar {
@@ -639,6 +789,8 @@ const handleEnd = async () => {
   border-bottom: 1px solid rgba(255,255,255,0.12);
   flex-shrink: 0;
   min-height: 48px;
+  position: relative;
+  z-index: 10;
 }
 
 .tb-left {
@@ -742,6 +894,8 @@ const handleEnd = async () => {
   gap: 8px;
   flex-shrink: 0;
   overflow-y: auto;
+  position: relative;
+  z-index: 5;
 }
 
 .chat-bubble {
@@ -866,15 +1020,12 @@ const handleEnd = async () => {
 .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(37,99,235,0.4); }
 .action-btn.finish { background: linear-gradient(135deg, #16a34a, #15803d); }
 
-/* CENTER: Ahmad */
-/* CENTER: Ahmad */
+/* CENTER: layout spacer (Ahmad is now inside .scene-viewport) */
 .center-panel {
   flex: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  min-width: 0;
   position: relative;
-  overflow: hidden;
+  z-index: 1;
 }
 
 .hidden-video {
@@ -885,16 +1036,308 @@ const handleEnd = async () => {
   height: 1px;
 }
 
+/*
+  SCENE ELEMENTS — positioned INSIDE .scene-viewport
+  ─────────────────────────────────────────────────
+  All use % of the scene-viewport (which fills the page).
+  Because both avatar and desk use the SAME containing block,
+  the clipping point is LOCKED — identical on every screen.
+
+  Desk covers bottom 18% → clip-path: inset(82% 0 0 0)
+  Ahmad starts at 19% from bottom → always 1% above desk
+  ─────────────────────────────────────────────────
+*/
 .ahmad-canvas {
-  max-height: 85%;
-  max-width: 100%;
+  position: absolute;
+  bottom: 19%;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 55%;
+  width: auto;
+  max-width: 38%;
   object-fit: contain;
+  z-index: 1;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+
+  /* Compositing: match warm natural-light scene */
+  filter:
+    brightness(0.93)
+    contrast(1.06)
+    saturate(1.15)
+    sepia(0.05)
+    drop-shadow(0 8px 18px rgba(20, 10, 0, 0.35))
+    drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18));
 }
-/* Loading state */
-.ahmad-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.loading-avatar { font-size: 60px; animation: bounce-load 1.5s infinite; }
-@keyframes bounce-load { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px)} }
-.ahmad-loading p { color: white; font-size: 14px; font-weight: 600; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+
+/* Desk foreground — same background, clipped to show only desk surface.
+   Covers Ahmad's lower body at a FIXED percentage point. */
+.desk-overlay {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center bottom;
+  z-index: 2;
+  pointer-events: none;
+  clip-path: inset(82% 0 0 0);
+}
+
+/* ═══ WELCOME OVERLAY ═══ */
+.welcome-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 20, 40, 0.92);
+  backdrop-filter: blur(16px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.welcome-card {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 0;
+  max-width: 460px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow:
+    0 25px 65px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+  animation: wcSlideUp 0.5s ease-out;
+}
+
+@keyframes wcSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Card Header ── */
+.wc-header {
+  background: linear-gradient(135deg, #102a43, #1a3a5c);
+  padding: 22px 30px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wc-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wc-icon {
+  font-size: 24px;
+}
+
+.wc-session-tag {
+  background: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+/* ── Title & Description ── */
+.wc-title {
+  color: #102a43;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0;
+  padding: 22px 30px 0;
+}
+
+.wc-desc {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.65;
+  margin: 8px 0 0;
+  padding: 0 30px;
+}
+
+/* ── Divider ── */
+.wc-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+  margin: 18px 30px;
+}
+
+/* ── Learning Goals ── */
+.wc-goals {
+  padding: 0 30px;
+  margin-bottom: 16px;
+}
+
+.wc-goals-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #d97706;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.wc-goals-icon {
+  font-size: 15px;
+}
+
+.wc-goal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #334155;
+  font-size: 13px;
+  padding: 6px 0;
+  line-height: 1.4;
+}
+
+.wc-goal-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: #dbeafe;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* ── Quote ── */
+.wc-quote {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 30px 20px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border-left: 3px solid #bfdbfe;
+}
+
+.wc-quote-mark {
+  color: #bfdbfe;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.wc-quote p {
+  color: #64748b;
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.5;
+  margin: 2px 0 0;
+}
+
+.wc-quote-author {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ── Action Button ── */
+.wc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 60px);
+  margin: 0 30px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 13px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.wc-btn.ready {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.30);
+}
+
+.wc-btn.ready:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.40);
+}
+
+.wc-btn.loading {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: wait;
+}
+
+.wc-btn:disabled {
+  cursor: wait;
+}
+
+.wc-btn-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.wc-btn-arrow {
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.wc-btn.ready:hover .wc-btn-arrow {
+  transform: translateX(3px);
+}
+
+.wc-btn-loading {
+  gap: 10px;
+}
+
+/* ── Spinner ── */
+.wc-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid #cbd5e1;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: wcSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes wcSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Footer Hint ── */
+.wc-footer-hint {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 11px;
+  margin: 12px 0 0;
+  padding: 0 30px 22px;
+}
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 .ahmad-static { max-height: 85%; max-width: 400px; object-fit: contain; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.4)); transition: all 0.3s; }
 .ahmad-static.speaking { filter: drop-shadow(0 8px 30px rgba(59,130,246,0.4)); }
 /* RIGHT Panel */
@@ -903,6 +1346,8 @@ const handleEnd = async () => {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  position: relative;
+  z-index: 5;
 }
 
 .scenario-card {
@@ -994,7 +1439,7 @@ const handleEnd = async () => {
 .slide-up-enter-from, .slide-up-leave-to { transform: translateX(-50%) translateY(20px); opacity: 0; }
 
 /* ═══ CONTROL BAR ═══ */
-.control-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 16px 14px; background: rgba(0,0,0,0.7); backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+.control-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 16px 14px; background: rgba(0,0,0,0.7); backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; position: relative; z-index: 10; }
 .cb-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
 .cb-btn:hover, .cb-btn.active { background: rgba(59,130,246,0.2); border-color: #3b82f6; }
 
@@ -1222,4 +1667,221 @@ const handleEnd = async () => {
 .typing-input { width: 300px; padding: 8px 12px; border-radius: 8px; border: 2px solid #3b82f6; font-size: 13px; outline: none; }
 .send-typed-btn { background: #2563eb; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; }
 .close-typing { background: rgba(220,38,38,0.8); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+
+/* ═══ Scenario Toggle Button (Mobile/Tablet) ═══ */
+.scenario-toggle-btn {
+  display: none;
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  padding: 5px 11px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.scenario-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.35);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+.mobile-scenario-close {
+  display: none;
+  text-align: left;
+  direction: ltr;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.mobile-scenario-close:hover {
+  color: #f87171;
+}
+
+/* =========================================================
+   RESPONSIVE DESIGN (Laptop, Tablet, Mobile)
+========================================================= */
+
+/* ═══ Laptop / Medium Desktop (max-width: 1200px) ═══ */
+@media (max-width: 1200px) {
+  .left-panel {
+    width: 260px;
+  }
+  .right-panel {
+    width: 230px;
+  }
+  .main-area {
+    gap: 10px;
+    padding: 6px 12px;
+  }
+}
+
+/* ═══ Tablet (max-width: 900px) ═══ */
+@media (max-width: 900px) {
+  .top-bar {
+    padding: 6px 12px;
+  }
+  .app-tagline {
+    display: none;
+  }
+  .student-badge,
+  .phase-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .timer-display {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+  .end-btn {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+
+  .scenario-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .left-panel {
+    width: 240px;
+  }
+
+  /* Scenario card collapses into overlay on tablet */
+  .right-panel {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    width: 300px;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    z-index: 99;
+    transition: all 0.3s ease;
+    transform: translateY(-20px);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .right-panel.mobile-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .mobile-scenario-close {
+    display: block;
+  }
+}
+
+/* ═══ Mobile Phones (max-width: 680px) ═══ */
+@media (max-width: 680px) {
+  .top-bar {
+    padding: 6px 10px;
+    min-height: 44px;
+    gap: 4px;
+  }
+  .app-logo {
+    font-size: 13px;
+  }
+  .student-badge {
+    display: none;
+  }
+  .phase-badge {
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+  .timer-display {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+  .end-btn {
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+
+  /* Main area vertical layout on mobile */
+  .main-area {
+    flex-direction: column;
+    padding: 4px 8px;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  /* Left panel (Chat bubble) stays compact at top */
+  .left-panel {
+    width: 100%;
+    max-height: 36%;
+    flex-shrink: 0;
+    overflow-y: auto;
+    z-index: 10;
+  }
+
+  .chat-bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+  }
+  .cb-name {
+    font-size: 13px;
+  }
+  .cb-text {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* Center panel: Ahmad is full width and centered */
+  .center-panel {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    align-items: flex-end;
+  }
+
+  /* Scenario card as mobile bottom/drawer modal */
+  .right-panel {
+    position: fixed;
+    top: 50px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-height: 75vh;
+    overflow-y: auto;
+    z-index: 100;
+    background: rgba(15, 23, 42, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+  }
+
+  /* Control bar (Microphone) */
+  .control-bar {
+    padding: 6px 10px 10px;
+    gap: 8px;
+  }
+  .mic-btn {
+    width: 54px;
+    height: 54px;
+    font-size: 22px;
+  }
+  .mic-ring {
+    width: 58px;
+    height: 58px;
+    top: -5px;
+  }
+  .mic-area {
+    min-width: 130px;
+  }
+  .mic-status {
+    font-size: 9px;
+    min-width: 85px;
+  }
+  .cb-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  .waveform {
+    display: none;
+  }
+}
 </style>

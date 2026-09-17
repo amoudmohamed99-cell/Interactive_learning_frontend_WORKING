@@ -51,7 +51,35 @@
           Log out
         </button>
 
+        <!-- Sandwich / Hamburger Menu Button -->
+        <button
+          class="hamburger-btn"
+          :class="{ active: mobileMenuOpen }"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+          aria-label="Toggle Menu"
+        >
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </button>
+
       </div>
+
+      <!-- Mobile Dropdown Menu -->
+      <transition name="slide-menu">
+        <div v-if="mobileMenuOpen" class="mobile-dropdown">
+          <button class="m-nav-item active" @click="mobileMenuOpen = false">🏠 Home</button>
+          <button class="m-nav-item" @click="goToScenarios(); mobileMenuOpen = false">💬 Sessions</button>
+          <button class="m-nav-item" @click="mobileMenuOpen = false">📊 Progress</button>
+          <button class="m-nav-item" @click="mobileMenuOpen = false">💡 Tips</button>
+          <button class="m-nav-item" @click="mobileMenuOpen = false">ℹ️ About</button>
+          <div class="m-divider"></div>
+          <div class="m-footer">
+            <span class="m-student">👤 {{ studentName }}</span>
+            <button class="m-logout" @click="handleLogout">Log out ↪</button>
+          </div>
+        </div>
+      </transition>
 
     </header>
 
@@ -306,10 +334,12 @@
 
 <script setup>
 
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout } from '../api'
 
 const router = useRouter()
+const mobileMenuOpen = ref(false)
 
 const student = JSON.parse(
   localStorage.getItem('student') || '{}'
@@ -382,13 +412,13 @@ const handleLogout = async () => {
 ========================================================= */
 
 .welcome-page {
-
   width: 100%;
-  min-height: 100vh;
-
-overflow: visible;
-
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   position: relative;
+  display: flex;
+  flex-direction: column;
 
   color: #102a43;
 
@@ -472,7 +502,7 @@ overflow: visible;
 
   gap: 9px;
 
-  color: #102a43;
+  color: #ffffff;
 
   font-size: 24px;
 
@@ -495,7 +525,7 @@ overflow: visible;
 
   border-radius: 10px;
 
-  background: #2563eb;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
 
   color: white;
 
@@ -512,7 +542,7 @@ overflow: visible;
 
   padding-left: 38px;
 
-  color: #94a3b8;
+  color: #cbd5e1;
 
   font-size: 8px;
 
@@ -543,7 +573,7 @@ overflow: visible;
   padding: 0 14px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: #cbd5e1;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -554,15 +584,15 @@ overflow: visible;
 
 .nav-item:hover {
 
-  color: #2563eb;
+  color: #93c5fd;
 
 }
 
 
 .nav-item.active {
-  color: #2563eb;
+  color: #ffffff;
   font-weight: 700;
-  background: #eff6ff;
+  background: rgba(37, 99, 235, 0.3);
   border-radius: 10px;
 }
 
@@ -592,15 +622,15 @@ overflow: visible;
   align-items: center;
   gap: 9px;
   padding: 6px 10px 6px 7px;
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
-  background: rgba(248, 250, 252, 0.72);
+  background: rgba(255, 255, 255, 0.08);
   transition: all 0.2s ease;
 }
 
 .student-badge:hover {
-  background: #f8fbff;
-  border-color: #dbeafe;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 
@@ -626,7 +656,7 @@ overflow: visible;
 
 .student-info strong {
 
-  color: #334155;
+  color: #e2e8f0;
 
   font-size: 11px;
 
@@ -635,7 +665,7 @@ overflow: visible;
 
 .student-arrow {
 
-  color: #64748b;
+  color: #94a3b8;
 
   font-size: 15px;
 
@@ -650,7 +680,7 @@ overflow: visible;
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: #64748b;
+  color: #94a3b8;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -658,9 +688,9 @@ overflow: visible;
 }
 
 .logout-btn:hover {
-  background: #fef2f2;
-  border-color: #fee2e2;
-  color: #dc2626;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
 }
 
 .logout-icon {
@@ -669,26 +699,147 @@ overflow: visible;
 }
 
 /* =========================================================
+   HAMBURGER / SANDWICH MENU BUTTON
+========================================================= */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.2s ease;
+}
+
+.hamburger-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hamburger-btn .bar {
+  width: 20px;
+  height: 2px;
+  background: #ffffff;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn.active .bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger-btn.active .bar:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.active .bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* =========================================================
+   MOBILE DROPDOWN MENU
+========================================================= */
+.mobile-dropdown {
+  position: absolute;
+  top: 78px;
+  left: 0;
+  right: 0;
+  background: #102a43;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+}
+
+.m-nav-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.m-nav-item:hover,
+.m-nav-item.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.m-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 6px 0;
+}
+
+.m-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px;
+}
+
+.m-student {
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.m-logout {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.slide-menu-enter-active,
+.slide-menu-leave-active {
+  transition: all 0.25s ease;
+}
+
+.slide-menu-enter-from,
+.slide-menu-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* =========================================================
    HERO
 ========================================================= */
 
 .hero {
   width: 100%;
+  flex: 1;
   min-height: calc(100vh - 78px);
   box-sizing: border-box;
-
-padding: 35px 5% 42px;
-
+  padding: 24px 5% 24px;
   display: grid;
-
-  /* TEXT LEFT — AHMAD RIGHT */
-  grid-template-columns: 1.08fr 0.92fr;
-
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   align-items: center;
   gap: 20px;
-
   direction: ltr;
-  background: url('/backgrounds/library-bg.png') center center / cover no-repeat;
+  background: url('/backgrounds/library-bg.png') center bottom / cover no-repeat;
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
 }
 
 
@@ -982,11 +1133,12 @@ background: rgba(160,185,215,1);
 .avatar-stage {
   position: relative;
   width: 100%;
-  height: min(690px, calc(100vh - 115px));
-  min-height: 590px;
-overflow: visible;
+  height: 100%;
+  max-height: calc(100vh - 120px);
+  min-height: 480px;
+  overflow: visible;
   border-radius: 0;
-background: transparent;
+  background: transparent;
 }
 
 /* =========================================================
@@ -1026,17 +1178,17 @@ background: transparent;
 
 /* =========================================================
    AHMAD
-   Large and intentionally cropped
+   Natural standing position on floor
 ========================================================= */
 
 .avatar-wrapper {
   position: absolute;
-left: 48%;
-bottom: -160px;
+  left: 50%;
+  bottom: 0;
   transform: translateX(-50%);
-width: 105%;
-
-height: 120%;
+  width: auto;
+  max-width: 92%;
+  height: 94%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1375,6 +1527,27 @@ padding: 9px 12px;
     padding: 0 22px;
   }
 
+  /* Hide desktop nav, show hamburger */
+  .main-nav {
+    display: none !important;
+  }
+
+  .student-badge {
+    display: none !important;
+  }
+
+  .logout-btn {
+    display: none !important;
+  }
+
+  .hamburger-btn {
+    display: flex !important;
+  }
+
+  .mobile-dropdown {
+    top: 78px;
+  }
+
   .hero {
     display: grid;
     grid-template-columns: 1fr;
@@ -1414,6 +1587,11 @@ padding: 9px 12px;
     white-space: normal;
   }
 
+  .hero-content h1 {
+    font-size: clamp(36px, 5vw, 52px);
+  }
+
+
   .hero-description {
     margin-left: 0;
     margin-right: 0;
@@ -1433,6 +1611,18 @@ padding: 9px 12px;
     margin-left: 40px;
   }
 
+
+  .avatar-section {
+    width: 100%;
+    height: auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    grid-column: 1;
+  }
+
+
   .avatar-stage {
     width: min(100%, 720px);
     height: 590px;
@@ -1446,6 +1636,7 @@ padding: 9px 12px;
     width: 88%;
     height: 112%;
   }
+
 
   .online-card {
     left: 8%;
@@ -1466,6 +1657,7 @@ padding: 9px 12px;
     right: 7%;
     bottom: 5%;
   }
+
 }
 
 
@@ -1489,15 +1681,20 @@ padding: 9px 12px;
     order: 2;
   }
 
+  .mobile-dropdown {
+    top: 68px;
+  }
+
   .brand-logo {
     display: flex;
     align-items: center;
     gap: 10px;
     color: #ffffff;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 800;
     letter-spacing: -0.9px;
   }
+
 
   .brand-mark {
     width: 30px;
@@ -1513,19 +1710,21 @@ padding: 9px 12px;
   }
 
   .brand-tagline {
-    padding-left: 40px;
+    padding-left: 38px;
     color: #cbd5e1;
     font-size: 8px;
     font-weight: 500;
     letter-spacing: 0.35px;
   }
 
+
   .main-nav {
     display: none;
   }
 
   .student-badge {
-    display: none;
+    display: none !important;
+
   }
 
   .hero {
@@ -1553,6 +1752,40 @@ padding: 9px 12px;
     align-items: center;
     justify-content: center;
   }
+
+  .eyebrow {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    padding: 8px 12px;
+  }
+
+  .hero-content h1 {
+    font-size: 32px;
+    letter-spacing: -1.8px;
+  }
+
+  .hero-content h1 span {
+    white-space: normal;
+  }
+
+  .hero-description {
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .features {
+    flex-direction: column;
+    align-items: flex-start;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    gap: 14px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+  }
+
 
   .avatar-stage {
     width: 100%;
@@ -1764,15 +1997,74 @@ padding: 9px 12px;
     letter-spacing: -1.5px;
   }
 
+  .avatar-wrapper {
+    left: 50%;
+    bottom: 0;
+    width: 85%;
+    height: 100%;
+  }
+
+  /* Hide speech card on mobile to reduce clutter */
+  .speech-card {
+    display: none;
+  }
+
+  .online-card {
+    left: 3%;
+    top: 8%;
+    padding: 9px 11px;
+  }
+
+  .online-card strong {
+    font-size: 11px;
+  }
+
+  .online-card span:not(.online-dot) {
+    font-size: 9px;
+  }
+
   .feature-rail {
     right: 1%;
+    top: 18%;
     width: 60px;
+    padding: 6px;
+    gap: 5px;
+  }
+
+  .rail-item {
+    padding: 7px 9px;
+    min-width: 70px;
+    gap: 8px;
+  }
+
+  .rail-icon {
+    font-size: 14px;
+  }
+
+  .rail-item strong {
+    font-size: 8px;
   }
 
   .journey-card {
-    right: 1%;
-    max-width: 124px;
+    right: 3%;
+    bottom: 3%;
+    padding: 10px 12px;
   }
+
+  .check-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  .journey-text strong {
+    font-size: 9px;
+  }
+
+  .journey-text span {
+    font-size: 7px;
+  }
+
 }
 
 
@@ -1787,14 +2079,38 @@ padding: 9px 12px;
   visibility: visible !important;
 }
 
-.welcome-header .brand-tagline {
-  color: #cbd5e1 !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
 
-.welcome-header .brand-mark {
-  background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+
+/* =========================================================
+   VERY SMALL MOBILE (≤400px)
+========================================================= */
+
+@media (max-width: 400px) {
+
+  .hero-content h1 {
+    font-size: 28px;
+    letter-spacing: -1.2px;
+  }
+
+  .avatar-stage {
+    height: 360px;
+    min-height: 360px;
+  }
+
+  .online-card {
+    display: none;
+  }
+
+  .feature-rail {
+    right: 1%;
+    top: 15%;
+  }
+
+  .journey-card {
+    right: 2%;
+    bottom: 2%;
+  }
+
 }
 
 </style>

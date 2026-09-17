@@ -362,10 +362,10 @@ const startScenario = async (scenario) => {
   creatingFor.value = scenario.id
 
   try {
-
+    const sessionNum = scenario.number || 1
     const data = await createSession(
       scenario.id,
-      1
+      sessionNum
     )
 
     const sessionId =
@@ -394,7 +394,6 @@ const startScenario = async (scenario) => {
       error.response?.data?.message ||
       'حصل خطأ، جرب تاني'
     )
-
   } finally {
 
     creatingSession.value = false
