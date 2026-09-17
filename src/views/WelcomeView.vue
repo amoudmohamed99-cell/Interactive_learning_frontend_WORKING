@@ -62,9 +62,9 @@
       <!-- ================= LEFT TEXT ================= -->
       <section class="hero-content">
 
-        <span class="eyebrow">
-          ENGLISH SPEAKING PRACTICE
-        </span>
+       <span class="eyebrow">
+  AI-POWERED ENGLISH SPEAKING PRACTICE
+</span>
 
 <h1>
   Practice English
@@ -73,9 +73,7 @@
 </h1>
 
 <p class="hero-description">
-  Build your English speaking skills by practicing with Ahmad,
-  your AI speaking partner. Choose a real-life scenario,
-  have a natural conversation, and improve step by step.
+  Practice speaking with Ahmad, your AI-powered English coach.
 </p>
 
 
@@ -103,7 +101,7 @@
             </div>
 
             <div class="feature-text">
-              <strong>Track Your Progress</strong>
+              <strong>Instant Feedback</strong>
               <span>See your improvement</span>
             </div>
 
@@ -117,7 +115,7 @@
             </div>
 
             <div class="feature-text">
-              <strong>Practical Scenarios</strong>
+              <strong>Build Speaking Confidence</strong>
 <span>Practice daily situations</span>
             </div>
 
@@ -133,7 +131,7 @@
             class="primary-btn"
             @click="goToScenarios"
           >
-            Begin Practice
+            Start Speaking
             <span>→</span>
           </button>
 
@@ -831,25 +829,25 @@ background: rgba(160,185,215,1);
 
 
 .feature-text {
-
   display: flex;
-
   flex-direction: column;
-
-  gap: 3px;
-
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
 }
 
 
 .feature-text strong {
   color: #000000;
-    font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .feature-text span {
   color: #94a3b8;
-  font-size: 10px;
+  font-size: 9px;
+  line-height: 1.3;
 }
 
 
@@ -869,19 +867,24 @@ background: rgba(160,185,215,1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 13px 22px;
+  gap: 9px;
+  padding: 15px 28px;
   border: none;
   border-radius: 11px;
   background: #2563eb;
   color: white;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.20);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.32);
   transition: all 0.2s ease;
 }
 
+.primary-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 13px 32px rgba(37, 99, 235, 0.38);
+}
 .primary-btn:hover {
   background: #1d4ed8;
   transform: translateY(-2px);
@@ -1064,7 +1067,7 @@ left: 20%;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+padding: 8px 11px;
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 12px;
@@ -1105,20 +1108,15 @@ left: 20%;
 
 
 .online-card strong {
-
-  color: #102a43;
-
-  font-size: 13px;
-
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 
 .online-card span:not(.online-dot) {
-
-  color: #94a3b8;
-
-  font-size: 10px;
-
+  color: #64748b;
+  font-size: 9px;
 }
 
 
@@ -1131,7 +1129,7 @@ left: 20%;
   position: absolute;
 left: 16%;
   top: 43%;
-  padding: 14px 18px;
+padding: 11px 14px;
   background: rgba(255, 255, 255, 0.84);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 14px;
@@ -1148,7 +1146,7 @@ left: 16%;
 
   color: #102a43;
 
-  font-size: 17px;
+font-size: 15px;
 
   margin-bottom: 5px;
 
@@ -1159,7 +1157,7 @@ left: 16%;
 
   color: #2563eb;
 
-  font-size: 15px;
+font-size: 13px;
 
   line-height: 1.4;
 
@@ -1180,7 +1178,7 @@ right: 21%;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px;
+padding: 6px;
   background: rgba(255, 255, 255, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 14px;
@@ -1194,8 +1192,8 @@ right: 21%;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 11px;
-  min-width: 82px;
+padding: 7px 9px;
+min-width: 72px;
   border-radius: 10px;
   color: #334155;
   font-size: 12px;
@@ -1204,7 +1202,7 @@ right: 21%;
 
 
 .rail-icon {
-  font-size: 17px;
+font-size: 15px;
   line-height: 1;
 }
 
@@ -1229,8 +1227,8 @@ right: 21%;
   bottom: 8%;
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 11px 15px;
+gap: 9px;
+padding: 9px 12px;
   background: rgba(255, 255, 255, 0.80);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 13px;
@@ -1298,445 +1296,489 @@ right: 21%;
 
 
 /* =========================================================
-   LAPTOP
-========================================================= */
+   RESPONSIVE SYSTEM
+   Desktop → Laptop → Tablet → Mobile
+   ========================================================= */
 
+/* =========================================================
+   LAPTOP
+   Keep the original desktop composition:
+   text left + Ahmad right.
+   ========================================================= */
 @media (max-width: 1250px) {
 
- .main-nav {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+  .main-nav {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-
-.hero {
-  width: 100%;
-  min-height: calc(100vh - 78px);
-  box-sizing: border-box;
-
-  padding: 35px 5% 42px;
-
-  display: grid;
-
-  grid-template-columns: 1.08fr 0.92fr;
-
-  align-items: center;
-  gap: 20px;
-
-  direction: ltr;
-
-background: url('/backgrounds/library-bg.png') center center / cover no-repeat !important;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
+  .hero {
+    width: 100%;
+    min-height: calc(100vh - 78px);
+    padding: 35px 5% 42px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    align-items: center;
+    gap: 20px;
+    direction: ltr;
+    background: url('/backgrounds/library-bg.png') center center / cover no-repeat !important;
+  }
 
   .hero-content h1 {
-
-    font-size:
-      clamp(
-        44px,
-        4.5vw,
-        62px
-      );
-
+    font-size: clamp(44px, 4.5vw, 62px);
   }
-
 
   .hero-description {
-
     font-size: 14px;
-
   }
-
 
   .avatar-stage {
-
     min-height: 530px;
-
   }
-
 
   .avatar-wrapper {
-
     width: 82%;
-
   }
-
 
   .online-card {
-
     left: 20%;
-
   }
-
 
   .speech-card {
-
     left: 13%;
-
   }
-
 
   .feature-rail {
-
     right: 12%;
-
   }
-
 
   .journey-card {
-
     right: 13%;
-
   }
-
 }
 
 
 /* =========================================================
    TABLET
-========================================================= */
-
+   One column, with Ahmad FIRST.
+   ========================================================= */
 @media (max-width: 900px) {
 
   .welcome-page {
-
+    overflow-x: hidden;
     overflow-y: auto;
-
   }
-
 
   .welcome-header {
-
-    padding:
-      0 22px;
-
+    padding: 0 22px;
   }
-
 
   .hero {
-
+    display: grid;
     grid-template-columns: 1fr;
-
+    grid-template-rows: auto auto;
     min-height: auto;
-
-  padding: 45px 22px 60px;
-
-    gap: 35px;
-
+    padding: 38px 22px 60px;
+    gap: 34px;
   }
 
+  /*
+    Ahmad is the first visual section on tablet.
+    The speaking content follows underneath.
+  */
+  .avatar-section {
+    grid-column: 1;
+    grid-row: 1;
+    order: 1;
 
-.hero-content {
-  max-width: 700px;
-  position: relative;
-  z-index: 20;
-  text-align: left;
-  direction: ltr;
-  grid-column: 1;
-}
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
+  .hero-content {
+    grid-column: 1;
+    grid-row: 2;
+    order: 2;
+
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .hero-content h1 span {
+    white-space: normal;
+  }
 
   .hero-description {
-
-    margin-left: auto;
-    margin-right: auto;
-
+    margin-left: 0;
+    margin-right: 0;
   }
-
 
   .features {
-
     justify-content: center;
-
+    width: 100%;
   }
-
 
   .hero-actions {
-
-    justify-content: center;
-
+    justify-content: flex-start;
   }
-
 
   .hero-note {
-
-    justify-content: center;
-
-    margin-left: 0;
-
+    justify-content: flex-start;
+    margin-left: 40px;
   }
-
-
- .avatar-section {
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  grid-column: 2;
-}
-
 
   .avatar-stage {
-
-    width: min(
-      100%,
-      720px
-    );
-
+    width: min(100%, 720px);
     height: 590px;
-
     min-height: 590px;
-
+    margin: 0 auto;
   }
 
+  .avatar-wrapper {
+    left: 50%;
+    bottom: -70px;
+    width: 88%;
+    height: 112%;
+  }
+
+  .online-card {
+    left: 8%;
+    top: 10%;
+  }
+
+  .speech-card {
+    left: 5%;
+    top: 42%;
+  }
+
+  .feature-rail {
+    right: 8%;
+    top: 22%;
+  }
+
+  .journey-card {
+    right: 7%;
+    bottom: 5%;
+  }
 }
 
 
 /* =========================================================
    MOBILE
-========================================================= */
-
+   Ahmad FIRST → Speaking content SECOND
+   ========================================================= */
 @media (max-width: 600px) {
 
   .welcome-header {
-
     height: 68px;
-
-    padding:
-      0 16px;
-
+    padding: 0 16px;
+    direction: ltr;
   }
 
+  .welcome-header .brand {
+    order: 1;
+  }
+
+  .welcome-header .header-actions {
+    order: 2;
+  }
 
   .brand-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-color: #ffffff;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.9px;
-}
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.9px;
+  }
 
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    color: white;
+    font-size: 8px;
+    box-shadow: 0 5px 16px rgba(37, 99, 235, 0.22);
+  }
 
-.brand-mark {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-background: linear-gradient(135deg, #3b82f6, #60a5fa);
-  color: white;
-  font-size: 8px;
-  box-shadow: 0 5px 16px rgba(37, 99, 235, 0.22);
-}
+  .brand-tagline {
+    padding-left: 40px;
+    color: #cbd5e1;
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.35px;
+  }
 
-
- .brand-tagline {
-  padding-left: 40px;
-color: #cbd5e1;
-  font-size: 8px;
-  font-weight: 500;
-  letter-spacing: 0.35px;
-}
-
+  .main-nav {
+    display: none;
+  }
 
   .student-badge {
-
     display: none;
-
   }
-
 
   .hero {
-
-    padding:
-      32px 16px 45px;
-
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    min-height: auto;
+    padding: 22px 16px 45px;
+    gap: 22px;
   }
 
-
-  .eyebrow {
-
-    font-size: 8px;
-
-    letter-spacing: 1.5px;
-
-    padding:
-      8px 12px;
-
-  }
-
-
-  .hero-content h1 {
-
-    font-size: 40px;
-
-    letter-spacing: -1.8px;
-
-  }
-
-
-  .hero-description {
-
-    font-size: 13px;
-
-    line-height: 1.7;
-
-  }
-
-
-  .features {
-
-    flex-direction: column;
-
-    align-items: flex-start;
-
-    width: fit-content;
-
-    margin-left: auto;
-    margin-right: auto;
-
-    gap: 14px;
-
-  }
-
-
-  .hero-actions {
-
-    flex-direction: column;
+  /*
+    Ahmad is intentionally the FIRST section on the phone.
+    This is a real layout reorder, not just a visual transform.
+  */
+  .avatar-section {
+    grid-column: 1;
+    grid-row: 1;
+    order: 1;
 
     width: 100%;
-
+    height: auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
+  .avatar-stage {
+    width: 100%;
+    height: 520px;
+    min-height: 520px;
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  .avatar-wrapper {
+    left: 50%;
+    bottom: -20px;
+    width: 94%;
+    height: 100%;
+  }
+
+  .online-card {
+    left: 2%;
+    top: 8%;
+    padding: 10px 12px;
+    z-index: 10;
+  }
+
+  .online-card strong {
+    font-size: 12px;
+  }
+
+  .online-card span:not(.online-dot) {
+    font-size: 8px;
+  }
+
+  .speech-card {
+    left: 2%;
+    top: 43%;
+    padding: 10px 12px;
+    z-index: 10;
+  }
+
+  .speech-card strong {
+    font-size: 13px;
+  }
+
+  .speech-card span {
+    font-size: 11px;
+  }
+
+  .feature-rail {
+    right: 2%;
+    top: 22%;
+    width: 64px;
+    padding: 5px;
+    gap: 6px;
+    z-index: 10;
+  }
+
+  .rail-item {
+    gap: 7px;
+    padding: 7px;
+    min-width: 0;
+  }
+
+  .rail-icon {
+    font-size: 14px;
+  }
+
+  .rail-item strong {
+    font-size: 8px;
+  }
+
+  .journey-card {
+    right: 2%;
+    bottom: 3%;
+    max-width: 132px;
+    box-sizing: border-box;
+    padding: 10px 11px;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .check-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 20px;
+  }
+
+  .journey-text strong {
+    font-size: 9px;
+  }
+
+  .journey-text span {
+    font-size: 7px;
+  }
+
+  /*
+    Speaking content is the SECOND section.
+  */
+  .hero-content {
+    grid-column: 1;
+    grid-row: 2;
+    order: 2;
+
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  .eyebrow {
+    max-width: 100%;
+    box-sizing: border-box;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+    padding: 8px 12px;
+  }
+
+  .hero-content h1 {
+    font-size: 40px;
+    line-height: 1.08;
+    letter-spacing: -1.8px;
+  }
+
+  .hero-content h1 span {
+    white-space: normal;
+  }
+
+  .hero-description {
+    max-width: 100%;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  /*
+    Keep the same responsive behavior used by Sessions:
+    horizontal on wider screens, stacked on phones.
+  */
+  .features {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    gap: 14px;
+  }
+
+  .feature {
+    width: 100%;
+    flex: none;
+    box-sizing: border-box;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 12px;
+    margin-top: 26px;
+  }
 
   .primary-btn,
   .secondary-btn {
-
     width: 100%;
-
+    box-sizing: border-box;
   }
 
+  .hero-note {
+    justify-content: center;
+    margin-left: 0;
+  }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+@media (max-width: 380px) {
+
+  .welcome-header {
+    padding: 0 12px;
+  }
+
+  .brand-logo {
+    font-size: 21px;
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 27px;
+    height: 27px;
+  }
+
+  .logout-btn {
+    padding: 6px 9px;
+    font-size: 9px;
+  }
+
+  .hero {
+    padding-left: 12px;
+    padding-right: 12px;
+    gap: 18px;
+  }
 
   .avatar-stage {
-
-    width: 100%;
-
-    height: 490px;
-
-    min-height: 490px;
-
+    height: 480px;
+    min-height: 480px;
   }
 
-
-  .avatar-wrapper {
-
-    left: 53%;
-
-    bottom: -55px;
-
-    width: 94%;
-
-    height: 108%;
-
+  .hero-content h1 {
+    font-size: 34px;
+    letter-spacing: -1.5px;
   }
-
-
-  .online-card {
-
-    left: 5%;
-
-    top: 12%;
-
-    padding:
-      11px 13px;
-
-  }
-
-
-  .speech-card {
-
-    left: 4%;
-
-    top: 42%;
-
-    padding:
-      12px 15px;
-
-  }
-
-
-  .speech-card strong {
-
-    font-size: 14px;
-
-  }
-
-
-  .speech-card span {
-
-    font-size: 12px;
-
-  }
-
 
   .feature-rail {
-
-    right: 4%;
-
-    top: 22%;
-
-    width: 65px;
-
+    right: 1%;
+    width: 60px;
   }
-
 
   .journey-card {
-
-    right: 5%;
-
-    bottom: 4%;
-
-    padding:
-      12px 14px;
-
+    right: 1%;
+    max-width: 124px;
   }
-
-
-  .check-icon {
-
-    width: 36px;
-    height: 36px;
-
-    font-size: 21px;
-
-  }
-
-
-  .journey-text strong {
-
-    font-size: 10px;
-
-  }
-
-
-  .journey-text span {
-
-    font-size: 8px;
-
-  }
-
 }
-/* Fix brand visibility on dark header */
+
+
+/* =========================================================
+   HEADER VISIBILITY
+   ========================================================= */
 .welcome-header .brand-logo > span:last-child {
   color: #ffffff !important;
   font-size: 24px !important;
@@ -1754,4 +1796,5 @@ color: #cbd5e1;
 .welcome-header .brand-mark {
   background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
 }
+
 </style>
