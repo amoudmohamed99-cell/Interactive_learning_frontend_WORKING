@@ -1034,7 +1034,7 @@ const handleEnd = async () => {
 */
 .ahmad-canvas {
   position: absolute;
-  bottom: 30px;
+  bottom: 60px;
   left: 50%;
   transform: translateX(-50%);
   height: 65%;
@@ -1408,7 +1408,7 @@ const handleEnd = async () => {
 .slide-up-enter-from, .slide-up-leave-to { transform: translateX(-50%) translateY(20px); opacity: 0; }
 
 /* ═══ CONTROL BAR ═══ */
-.control-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 4px 16px 6px; background: rgba(0,0,0,0.7); backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; position: relative; z-index: 10; }
+.control-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 4px 16px 6px; background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5)); backdrop-filter: blur(10px); border-top: none; flex-shrink: 0; position: relative; z-index: 10; }
 .cb-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
 .cb-btn:hover, .cb-btn.active { background: rgba(59,130,246,0.2); border-color: #3b82f6; }
 
@@ -1417,17 +1417,17 @@ const handleEnd = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 2px;
   position: relative;
-  min-width: 210px;
+  min-width: 160px;
 }
 
 /* Animated outer ring */
 .mic-ring {
   position: absolute;
-  top: -8px;
-  width: 68px;
-  height: 68px;
+  top: -5px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: 2px solid transparent;
   transition: all 0.3s ease;
@@ -1480,9 +1480,9 @@ const handleEnd = async () => {
 .mic-area::after {
   content: "";
   position: absolute;
-  top: 20px;
-  width: 72px;
-  height: 24px;
+  top: 14px;
+  width: 60px;
+  height: 16px;
   opacity: 0.85;
   pointer-events: none;
   transition: all 0.3s ease;
@@ -1531,8 +1531,8 @@ const handleEnd = async () => {
 /* ═══ Main Microphone ═══ */
 .mic-btn {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.20);
 
@@ -1541,7 +1541,7 @@ const handleEnd = async () => {
     linear-gradient(145deg, #2563eb, #1e40af);
 
   color: white;
-  font-size: 27px;
+  font-size: 20px;
   cursor: pointer;
 
   display: flex;
@@ -1556,9 +1556,9 @@ const handleEnd = async () => {
   z-index: 2;
 
   box-shadow:
-    0 8px 20px rgba(0,0,0,0.30),
-    0 0 0 5px rgba(59,130,246,0.10),
-    0 0 24px rgba(59,130,246,0.30);
+    0 4px 12px rgba(0,0,0,0.30),
+    0 0 0 3px rgba(59,130,246,0.10),
+    0 0 16px rgba(59,130,246,0.30);
 }
 
 .mic-btn:hover:not(:disabled) {
@@ -1611,20 +1611,20 @@ const handleEnd = async () => {
 }
 .mic-status {
   color: #e2e8f0;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
   white-space: nowrap;
-  min-width: 125px;
+  min-width: 100px;
   text-align: center;
-  padding: 3px 8px;
-  border-radius: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
   background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(6px);
   text-shadow: 0 1px 3px rgba(0,0,0,0.35);
 }
-.waveform { display: flex; align-items: center; gap: 2px; height: 24px; }
-.wave-bar { width: 3px; background: #34d399; border-radius: 2px; animation: wa 0.6s ease-in-out infinite alternate; }
-@keyframes wa { 0%{height:4px} 100%{height:20px} }
+.waveform { display: flex; align-items: center; gap: 2px; height: 16px; }
+.wave-bar { width: 2px; background: #34d399; border-radius: 2px; animation: wa 0.6s ease-in-out infinite alternate; }
+@keyframes wa { 0%{height:3px} 100%{height:14px} }
 
 .phase-dots-mini { display: flex; gap: 5px; }
 .pm { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.2); }
@@ -1775,7 +1775,7 @@ const handleEnd = async () => {
   .ahmad-canvas {
     height: 50%;
     max-width: 70%;
-    bottom: 20px;
+    bottom: 45px;
   }
 
   /* Main area vertical layout on mobile */
@@ -1839,25 +1839,25 @@ const handleEnd = async () => {
 
   /* Control bar (Microphone) */
   .control-bar {
-    padding: 6px 10px 10px;
-    gap: 8px;
+    padding: 3px 8px 5px;
+    gap: 6px;
   }
   .mic-btn {
-    width: 54px;
-    height: 54px;
-    font-size: 22px;
+    width: 38px;
+    height: 38px;
+    font-size: 17px;
   }
   .mic-ring {
-    width: 58px;
-    height: 58px;
-    top: -5px;
+    width: 44px;
+    height: 44px;
+    top: -4px;
   }
   .mic-area {
-    min-width: 130px;
+    min-width: 100px;
   }
   .mic-status {
-    font-size: 9px;
-    min-width: 85px;
+    font-size: 8px;
+    min-width: 70px;
   }
   .cb-btn {
     padding: 4px 8px;
