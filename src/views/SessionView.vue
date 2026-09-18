@@ -1,12 +1,11 @@
 <template>
   <div class="session-page">
-    <!-- ═══ Fixed-ratio scene: BG + Avatar + Desk as ONE unit ═══ -->
+    <!-- ═══ Scene: BG + Avatar ═══ -->
     <div class="scene-viewport" :style="{ backgroundImage: `url(${currentBg})` }">
       <div class="bg-overlay"></div>
       <video ref="simliVideoRef" autoplay playsinline class="hidden-video" />
       <audio ref="simliAudioRef" autoplay />
       <canvas ref="chromaCanvas" class="ahmad-canvas" v-show="simliConnected && !showWelcome"></canvas>
-      <div class="desk-overlay" :style="{ backgroundImage: `url(${currentBg})` }"></div>
     </div>
 
     <!-- ═══ Welcome / Instructions Overlay (while Simli loads) ═══ -->
@@ -742,25 +741,17 @@ const handleEnd = async () => {
 }
 
 /*
-  SCENE VIEWPORT — the single unified render of the scene.
-  Fixed 16:9 aspect ratio. Covers the viewport like
-  background-size: cover. Background, avatar, and desk
-  are ALL children of this container — they scale as ONE unit.
+  SCENE VIEWPORT — fullscreen background behind Ahmad.
+  Simple cover approach: the new backgrounds have no desk,
+  so we don't need aspect-ratio tricks anymore.
 */
 .scene-viewport {
   position: absolute;
   inset: 0;
   z-index: 0;
   background-size: cover;
-  background-position: center bottom;
+  background-position: center center;
   transition: background-image 0.5s ease-in-out;
-
-  /* Cover behavior with fixed aspect ratio:
-     The viewport is filled while the 16:9 ratio is preserved.
-     On wide screens the scene matches width (height overflows/crops).
-     On tall screens the scene matches height (width overflows/crops).
-     This is achieved by setting min-width/min-height to 100%
-     of the parent, with the parent overflow:hidden. */
 }
 
 .bg-overlay {
@@ -1037,49 +1028,27 @@ const handleEnd = async () => {
 }
 
 /*
-  SCENE ELEMENTS — positioned INSIDE .scene-viewport
-  ─────────────────────────────────────────────────
-  All use % of the scene-viewport (which fills the page).
-  Because both avatar and desk use the SAME containing block,
-  the clipping point is LOCKED — identical on every screen.
-
-  Desk covers bottom 18% → clip-path: inset(82% 0 0 0)
-  Ahmad starts at 19% from bottom → always 1% above desk
-  ─────────────────────────────────────────────────
+  AHMAD AVATAR — positioned at bottom-center of the viewport.
+  No desk overlay needed — the avatar's chroma-keyed video
+  naturally shows upper body, fading into the background.
 */
 .ahmad-canvas {
   position: absolute;
-  bottom: 19%;
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  height: 55%;
+  height: 65%;
   width: auto;
-  max-width: 38%;
+  max-width: 50%;
   object-fit: contain;
   z-index: 1;
   pointer-events: none;
   transition: opacity 0.5s ease;
 
-  /* Compositing: match warm natural-light scene */
+  /* Subtle shadow to ground the avatar in the scene */
   filter:
-    brightness(0.93)
-    contrast(1.06)
-    saturate(1.15)
-    sepia(0.05)
-    drop-shadow(0 8px 18px rgba(20, 10, 0, 0.35))
-    drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18));
-}
-
-/* Desk foreground — same background, clipped to show only desk surface.
-   Covers Ahmad's lower body at a FIXED percentage point. */
-.desk-overlay {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center bottom;
-  z-index: 2;
-  pointer-events: none;
-  clip-path: inset(82% 0 0 0);
+    drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
 }
 
 /* ═══ WELCOME OVERLAY ═══ */
@@ -1439,7 +1408,7 @@ const handleEnd = async () => {
 .slide-up-enter-from, .slide-up-leave-to { transform: translateX(-50%) translateY(20px); opacity: 0; }
 
 /* ═══ CONTROL BAR ═══ */
-.control-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 16px 14px; background: rgba(0,0,0,0.7); backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; position: relative; z-index: 10; }
+.control-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 4px 16px 6px; background: rgba(0,0,0,0.7); backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; position: relative; z-index: 10; }
 .cb-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
 .cb-btn:hover, .cb-btn.active { background: rgba(59,130,246,0.2); border-color: #3b82f6; }
 
@@ -1802,33 +1771,47 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
+  /* Avatar: larger on mobile so it's clearly visible */
+  .ahmad-canvas {
+    height: 50%;
+    max-width: 70%;
+    bottom: 20px;
+  }
+
   /* Main area vertical layout on mobile */
   .main-area {
     flex-direction: column;
     padding: 4px 8px;
-    gap: 6px;
+    gap: 4px;
     overflow: hidden;
   }
 
-  /* Left panel (Chat bubble) stays compact at top */
+  /* Left panel (Chat bubble) — compact so it doesn't cover Ahmad */
   .left-panel {
     width: 100%;
-    max-height: 36%;
+    max-height: 28%;
     flex-shrink: 0;
     overflow-y: auto;
     z-index: 10;
   }
 
   .chat-bubble {
-    padding: 10px 14px;
+    padding: 8px 12px;
     border-radius: 14px;
   }
   .cb-name {
     font-size: 13px;
   }
   .cb-text {
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  /* Action buttons: compact on mobile */
+  .action-btn {
+    padding: 8px;
+    font-size: 12px;
+    border-radius: 8px;
   }
 
   /* Center panel: Ahmad is full width and centered */
