@@ -1,94 +1,6 @@
 <template>
-  <div class="session-page">
-    <!-- ═══ Scene: BG + Avatar ═══ -->
-    <div class="scene-viewport" :style="{ backgroundImage: `url(${currentBg})` }">
-      <div class="bg-overlay"></div>
-      <video ref="simliVideoRef" autoplay playsinline class="hidden-video" />
-      <audio ref="simliAudioRef" autoplay />
-      <canvas ref="chromaCanvas" class="ahmad-canvas" v-show="simliConnected && !showWelcome"></canvas>
-    </div>
-
-    <!-- ═══ Welcome / Instructions Overlay (while Simli loads) ═══ -->
-    <transition name="fade">
-      <div v-if="showWelcome" class="welcome-overlay">
-        <div class="welcome-card">
-
-          <!-- Card Header -->
-          <div class="wc-header">
-            <div class="wc-icon-wrap">
-              <span class="wc-icon">💬</span>
-            </div>
-            <span class="wc-session-tag">
-              SESSION {{ scenarioNumber }}
-            </span>
-          </div>
-
-          <!-- Title -->
-          <h2 class="wc-title">{{ scenarioTitle }}</h2>
-
-          <!-- Description -->
-          <p class="wc-desc">{{ scenarioContext }}</p>
-
-          <!-- Divider -->
-          <div class="wc-divider"></div>
-
-          <!-- Learning Goals -->
-          <div class="wc-goals">
-            <h4 class="wc-goals-title">
-              <span class="wc-goals-icon">🎯</span>
-              Learning Goals
-            </h4>
-            <div
-              v-for="(goal, i) in learningGoals"
-              :key="i"
-              class="wc-goal-item"
-            >
-              <span class="wc-goal-check">✓</span>
-              {{ goal }}
-            </div>
-          </div>
-
-          <!-- Quote -->
-          <div class="wc-quote">
-            <span class="wc-quote-mark">"</span>
-            <div>
-              <p>{{ motivationalQuote }}</p>
-              <span class="wc-quote-author">— Ahmad</span>
-            </div>
-          </div>
-
-          <!-- Action Button -->
-          <button
-            @click="dismissWelcome"
-            class="wc-btn"
-            :class="{
-              ready: simliConnected || simliTimedOut,
-              loading: !simliConnected && !simliTimedOut
-            }"
-            :disabled="!simliConnected && !simliTimedOut"
-          >
-            <span v-if="simliConnected || simliTimedOut" class="wc-btn-content">
-              Start Session
-              <span class="wc-btn-arrow">→</span>
-            </span>
-            <span v-else class="wc-btn-content wc-btn-loading">
-              <span class="wc-spinner"></span>
-              Getting your session ready...
-            </span>
-          </button>
-
-          <!-- Footer hint -->
-          <p v-if="simliConnected || simliTimedOut" class="wc-footer-hint">
-            Everything is set. Let's go! 🚀
-          </p>
-          <p v-else class="wc-footer-hint">
-            This will only take a moment
-          </p>
-
-        </div>
-      </div>
-    </transition>
-
+  <div class="session-page" :style="{ backgroundImage: `url(${currentBg})` }">
+    <div class="bg-overlay"></div>
 
     <!-- ═══ Top Header Bar ═══ -->
     <header class="top-bar">
@@ -101,9 +13,6 @@
         <span class="phase-badge">📋 {{ phaseLabel }}</span>
       </div>
       <div class="tb-right">
-        <button class="scenario-toggle-btn" @click="showMobileScenario = !showMobileScenario">
-          {{ showMobileScenario ? '✕ إغلاق' : '📋 السيناريو' }}
-        </button>
         <span class="timer-display" :class="{ warning: remainingTotal < 300 }">⏱ {{ formatTime(remainingTotal) }}</span>
         <button class="end-btn" @click="handleEnd">🔴 End Session</button>
       </div>
@@ -160,13 +69,22 @@
         </div>
       </div>
 
-      <!-- CENTER: spacer for layout -->
-      <div class="center-panel"></div>
+      <!-- CENTER: Ahmad Avatar -->
+      <div class="center-panel">
+        <video ref="simliVideoRef" autoplay playsinline class="hidden-video" />
+        <audio ref="simliAudioRef" autoplay />
+        <canvas ref="chromaCanvas" class="ahmad-canvas" v-show="simliConnected"></canvas>
+        <div class="desk-foreground" :style="{ backgroundImage: `url(${currentBg})` }"></div>
+        <!-- Loading while Simli connects -->
+        <div v-if="!simliConnected" class="ahmad-loading">
+          <div class="loading-avatar">🎙️</div>
+          <p>Connecting to Ahmad...</p>
+        </div>
+      </div>
 
       <!-- RIGHT Panel: Scenario Card -->
-      <div class="right-panel" :class="{ 'mobile-open': showMobileScenario }">
+      <div class="right-panel">
         <div class="scenario-card">
-          <div class="mobile-scenario-close" @click="showMobileScenario = false">✕ إغلاق</div>
           <span class="sc-tag">Today's Scenario</span>
           <h2 class="sc-title">{{ scenarioTitle }}</h2>
           <p class="sc-desc">{{ scenarioContext }}</p>
@@ -198,7 +116,9 @@
 
     <!-- ═══ Bottom Control Bar ═══ -->
     <footer class="control-bar">
-      <div class="cb-left-area"></div>
+      <div class="cb-left-area">
+        <button class="cb-btn" @click="toggleTyping" :class="{ active: showTypingInput }">⌨️ Type instead</button>
+      </div>
 
       <div v-if="isRecording" class="waveform">
         <div v-for="i in 6" :key="'l'+i" class="wave-bar" :style="{ animationDelay: (i * 0.06) + 's' }"></div>
@@ -259,34 +179,15 @@ const feedbackCard = ref(null)
 const ahmadLastMessage = ref('')
 const showTypingInput = ref(false)
 const typedMessage = ref('')
-const showMobileScenario = ref(false)
 let currentAudio = null // Track current audio to prevent overlap
 
-// Simli Avatar Composable
+// Simli
 const { videoRef: simliVideoRef, audioRef: simliAudioRef, isConnected: simliConnected, isAvatarSpeaking: simliSpeaking, startAvatar, stopAvatar, sendAudio: simliSendAudio } = useSimli()
 const simliReady = ref(false)
-const simliTimedOut = ref(false)
 
 // Chroma Key
 const chromaCanvas = ref(null)
 const { startChromaKey, stopChromaKey } = useChromaKey()
-
-// Welcome overlay — shown while Simli loads and user reads instructions
-const showWelcome = ref(true)
-let pendingIntro = null // { msg, audio, format }
-
-const dismissWelcome = () => {
-  showWelcome.value = false
-  // Play greeting as soon as user enters session
-  if (pendingIntro) {
-    const { msg, audio, format } = pendingIntro
-    pendingIntro = null
-    // Small delay for fade transition
-    setTimeout(() => {
-      speakAloud(msg, audio, format)
-    }, 300)
-  }
-}
 
 // When Simli connects, start chroma key processing
 watch(simliConnected, (connected) => {
@@ -309,10 +210,8 @@ const remainingTotal = ref(40 * 60)
 const remainingInPhase = ref(5 * 60)
 let timerInterval = null
 
-// Background: always use the scenario background
-const currentBg = computed(() => {
-  return `/backgrounds/sc0${scenarioNumber.value}.jpg`
-})
+// Background: always empty scene (Ahmad comes from Simli only)
+const currentBg = computed(() => `/backgrounds/sc0${scenarioNumber.value}.jpg`)
 
 const phaseLabel = computed(() => {
   const labels = { intro: 'التهيئة', vocab: 'المدخل اللغوي', conversation: 'المحادثة الموجهة', feedback: 'التغذية الراجعة', closing: 'الخلاصة والتأمل' }
@@ -320,7 +219,7 @@ const phaseLabel = computed(() => {
 })
 
 const canRecord = computed(() => {
-  return !ahmadSpeaking.value && status.value !== 'processing' && (currentPhase.value === 'conversation' || currentPhase.value === 'intro')
+  return !ahmadSpeaking.value && status.value !== 'processing' && currentPhase.value === 'conversation'
 })
 
 const micRingClass = computed(() => {
@@ -683,18 +582,13 @@ onMounted(async () => {
 
     updatePhaseState(r.phase)
 
-    // Start Simli avatar (fire-and-forget, it will work when ready)
+    // Start Simli avatar
     startAvatar().then(ok => { simliReady.value = ok })
 
-    // Store greeting — will play when welcome is dismissed AND Simli is connected
-    const introMsg = r.reply || r.greeting || `Hi! I'm Ahmad. Welcome! Today we will practice ${scenario.title || 'speaking English'}. Are you ready?`
+    // Ahmad greets
+    const introMsg = r.reply || `Hi! I'm Ahmad. Welcome! Today we will practice ${scenario.title || 'speaking English'}. Are you ready?`
     ahmadLastMessage.value = introMsg
-    pendingIntro = { msg: introMsg, audio: r.audio, format: r.audio_format }
-
-    // Simli connection timeout fallback (unlock button after 8s if network is slow)
-    setTimeout(() => {
-      simliTimedOut.value = true
-    }, 8000)
+    speakAloud(introMsg, r.audio, r.audio_format)
 
     startTimer()
   } catch (e) {
@@ -730,44 +624,9 @@ const handleEnd = async () => {
 
 <style scoped>
 /* ═══ BASE ═══ */
-.session-page {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-  font-family: 'Segoe UI', sans-serif;
-  background: #0a1428;
-}
-
-/*
-  SCENE VIEWPORT — fullscreen background behind Ahmad.
-  Simple cover approach: the new backgrounds have no desk,
-  so we don't need aspect-ratio tricks anymore.
-*/
-.scene-viewport {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-size: cover;
-  background-position: center center;
-  transition: background-image 0.5s ease-in-out;
-}
-
-.bg-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.25);
-  z-index: 0;
-}
-
-.session-page > header,
-.session-page > .phase-dots-bar,
-.session-page > .main-area,
-.session-page > footer {
-  position: relative;
-  z-index: 3;
-}
+.session-page { height: 100vh; display: flex; flex-direction: column; background-size: auto 100%; background-position: center; position: relative; overflow: hidden; font-family: 'Segoe UI', sans-serif; transition: background-image 0.5s ease-in-out; }
+.bg-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.25); z-index: 0; }
+.session-page > * { position: relative; z-index: 1; }
 
 /* ═══ TOP BAR ═══ */
 .top-bar {
@@ -780,8 +639,6 @@ const handleEnd = async () => {
   border-bottom: 1px solid rgba(255,255,255,0.12);
   flex-shrink: 0;
   min-height: 48px;
-  position: relative;
-  z-index: 10;
 }
 
 .tb-left {
@@ -885,8 +742,6 @@ const handleEnd = async () => {
   gap: 8px;
   flex-shrink: 0;
   overflow-y: auto;
-  position: relative;
-  z-index: 5;
 }
 
 .chat-bubble {
@@ -1011,12 +866,15 @@ const handleEnd = async () => {
 .action-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(37,99,235,0.4); }
 .action-btn.finish { background: linear-gradient(135deg, #16a34a, #15803d); }
 
-/* CENTER: layout spacer (Ahmad is now inside .scene-viewport) */
+/* CENTER: Ahmad */
+/* CENTER: Ahmad */
 .center-panel {
   flex: 1;
-  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   position: relative;
-  z-index: 1;
+  overflow: hidden;
 }
 
 .hidden-video {
@@ -1027,286 +885,16 @@ const handleEnd = async () => {
   height: 1px;
 }
 
-/*
-  AHMAD AVATAR — positioned at bottom-center of the viewport.
-  No desk overlay needed — the avatar's chroma-keyed video
-  naturally shows upper body, fading into the background.
-*/
 .ahmad-canvas {
-  position: absolute;
-  bottom: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 65%;
-  width: auto;
-  max-width: 50%;
+  max-height: 85%;
+  max-width: 100%;
   object-fit: contain;
-  z-index: 1;
-  pointer-events: none;
-  transition: opacity 0.5s ease;
-
-  /* Subtle shadow to ground the avatar in the scene */
-  filter:
-    drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4))
-    drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
 }
-
-/* ═══ WELCOME OVERLAY ═══ */
-.welcome-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 20, 40, 0.92);
-  backdrop-filter: blur(16px);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.welcome-card {
-  background: #ffffff;
-  border-radius: 22px;
-  padding: 0;
-  max-width: 460px;
-  width: 100%;
-  overflow: hidden;
-  box-shadow:
-    0 25px 65px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
-  animation: wcSlideUp 0.5s ease-out;
-}
-
-@keyframes wcSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* ── Card Header ── */
-.wc-header {
-  background: linear-gradient(135deg, #102a43, #1a3a5c);
-  padding: 22px 30px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.wc-icon-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: rgba(59, 130, 246, 0.20);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.wc-icon {
-  font-size: 24px;
-}
-
-.wc-session-tag {
-  background: rgba(59, 130, 246, 0.22);
-  color: #93c5fd;
-  padding: 5px 14px;
-  border-radius: 20px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-}
-
-/* ── Title & Description ── */
-.wc-title {
-  color: #102a43;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin: 0;
-  padding: 22px 30px 0;
-}
-
-.wc-desc {
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.65;
-  margin: 8px 0 0;
-  padding: 0 30px;
-}
-
-/* ── Divider ── */
-.wc-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-  margin: 18px 30px;
-}
-
-/* ── Learning Goals ── */
-.wc-goals {
-  padding: 0 30px;
-  margin-bottom: 16px;
-}
-
-.wc-goals-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #d97706;
-  font-size: 13px;
-  font-weight: 700;
-  margin: 0 0 10px;
-}
-
-.wc-goals-icon {
-  font-size: 15px;
-}
-
-.wc-goal-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #334155;
-  font-size: 13px;
-  padding: 6px 0;
-  line-height: 1.4;
-}
-
-.wc-goal-check {
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
-  background: #dbeafe;
-  color: #2563eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
-/* ── Quote ── */
-.wc-quote {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin: 0 30px 20px;
-  padding: 12px 14px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border-left: 3px solid #bfdbfe;
-}
-
-.wc-quote-mark {
-  color: #bfdbfe;
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.wc-quote p {
-  color: #64748b;
-  font-size: 12px;
-  font-style: italic;
-  line-height: 1.5;
-  margin: 2px 0 0;
-}
-
-.wc-quote-author {
-  color: #94a3b8;
-  font-size: 10px;
-  font-weight: 600;
-}
-
-/* ── Action Button ── */
-.wc-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: calc(100% - 60px);
-  margin: 0 30px;
-  padding: 14px 20px;
-  border: none;
-  border-radius: 13px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.wc-btn.ready {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  color: white;
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.30);
-}
-
-.wc-btn.ready:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.40);
-}
-
-.wc-btn.loading {
-  background: #f1f5f9;
-  color: #64748b;
-  cursor: wait;
-}
-
-.wc-btn:disabled {
-  cursor: wait;
-}
-
-.wc-btn-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.wc-btn-arrow {
-  font-size: 18px;
-  transition: transform 0.2s ease;
-}
-
-.wc-btn.ready:hover .wc-btn-arrow {
-  transform: translateX(3px);
-}
-
-.wc-btn-loading {
-  gap: 10px;
-}
-
-/* ── Spinner ── */
-.wc-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid #cbd5e1;
-  border-top-color: #2563eb;
-  border-radius: 50%;
-  animation: wcSpin 0.8s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes wcSpin {
-  to { transform: rotate(360deg); }
-}
-
-/* ── Footer Hint ── */
-.wc-footer-hint {
-  text-align: center;
-  color: #94a3b8;
-  font-size: 11px;
-  margin: 12px 0 0;
-  padding: 0 30px 22px;
-}
-
-.fade-enter-active, .fade-leave-active { transition: opacity 0.4s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+/* Loading state */
+.ahmad-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.loading-avatar { font-size: 60px; animation: bounce-load 1.5s infinite; }
+@keyframes bounce-load { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px)} }
+.ahmad-loading p { color: white; font-size: 14px; font-weight: 600; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
 .ahmad-static { max-height: 85%; max-width: 400px; object-fit: contain; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.4)); transition: all 0.3s; }
 .ahmad-static.speaking { filter: drop-shadow(0 8px 30px rgba(59,130,246,0.4)); }
 /* RIGHT Panel */
@@ -1315,8 +903,6 @@ const handleEnd = async () => {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  position: relative;
-  z-index: 5;
 }
 
 .scenario-card {
@@ -1408,7 +994,7 @@ const handleEnd = async () => {
 .slide-up-enter-from, .slide-up-leave-to { transform: translateX(-50%) translateY(20px); opacity: 0; }
 
 /* ═══ CONTROL BAR ═══ */
-.control-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 4px 16px 6px; background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5)); backdrop-filter: blur(10px); border-top: none; flex-shrink: 0; position: relative; z-index: 10; }
+.control-bar { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 16px 14px; background: rgba(0,0,0,0.7); backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
 .cb-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
 .cb-btn:hover, .cb-btn.active { background: rgba(59,130,246,0.2); border-color: #3b82f6; }
 
@@ -1417,17 +1003,17 @@ const handleEnd = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
   position: relative;
-  min-width: 160px;
+  min-width: 210px;
 }
 
 /* Animated outer ring */
 .mic-ring {
   position: absolute;
-  top: -5px;
-  width: 50px;
-  height: 50px;
+  top: -8px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   border: 2px solid transparent;
   transition: all 0.3s ease;
@@ -1480,9 +1066,9 @@ const handleEnd = async () => {
 .mic-area::after {
   content: "";
   position: absolute;
-  top: 14px;
-  width: 60px;
-  height: 16px;
+  top: 20px;
+  width: 72px;
+  height: 24px;
   opacity: 0.85;
   pointer-events: none;
   transition: all 0.3s ease;
@@ -1531,8 +1117,8 @@ const handleEnd = async () => {
 /* ═══ Main Microphone ═══ */
 .mic-btn {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.20);
 
@@ -1541,7 +1127,7 @@ const handleEnd = async () => {
     linear-gradient(145deg, #2563eb, #1e40af);
 
   color: white;
-  font-size: 20px;
+  font-size: 27px;
   cursor: pointer;
 
   display: flex;
@@ -1556,9 +1142,9 @@ const handleEnd = async () => {
   z-index: 2;
 
   box-shadow:
-    0 4px 12px rgba(0,0,0,0.30),
-    0 0 0 3px rgba(59,130,246,0.10),
-    0 0 16px rgba(59,130,246,0.30);
+    0 8px 20px rgba(0,0,0,0.30),
+    0 0 0 5px rgba(59,130,246,0.10),
+    0 0 24px rgba(59,130,246,0.30);
 }
 
 .mic-btn:hover:not(:disabled) {
@@ -1611,20 +1197,20 @@ const handleEnd = async () => {
 }
 .mic-status {
   color: #e2e8f0;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
-  min-width: 100px;
+  min-width: 125px;
   text-align: center;
-  padding: 2px 6px;
-  border-radius: 8px;
+  padding: 3px 8px;
+  border-radius: 10px;
   background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(6px);
   text-shadow: 0 1px 3px rgba(0,0,0,0.35);
 }
-.waveform { display: flex; align-items: center; gap: 2px; height: 16px; }
-.wave-bar { width: 2px; background: #34d399; border-radius: 2px; animation: wa 0.6s ease-in-out infinite alternate; }
-@keyframes wa { 0%{height:3px} 100%{height:14px} }
+.waveform { display: flex; align-items: center; gap: 2px; height: 24px; }
+.wave-bar { width: 3px; background: #34d399; border-radius: 2px; animation: wa 0.6s ease-in-out infinite alternate; }
+@keyframes wa { 0%{height:4px} 100%{height:20px} }
 
 .phase-dots-mini { display: flex; gap: 5px; }
 .pm { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.2); }
@@ -1637,234 +1223,1059 @@ const handleEnd = async () => {
 .send-typed-btn { background: #2563eb; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; }
 .close-typing { background: rgba(220,38,38,0.8); color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 14px; }
 
-/* ═══ Scenario Toggle Button (Mobile/Tablet) ═══ */
-.scenario-toggle-btn {
-  display: none;
-  background: rgba(59, 130, 246, 0.2);
-  color: #bfdbfe;
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  padding: 5px 11px;
-  border-radius: 9px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.scenario-toggle-btn:hover {
-  background: rgba(59, 130, 246, 0.35);
-  border-color: rgba(59, 130, 246, 0.6);
-}
 
-.mobile-scenario-close {
-  display: none;
-  text-align: left;
-  direction: ltr;
-  color: #94a3b8;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-.mobile-scenario-close:hover {
-  color: #f87171;
-}
+  /* =========================================================
+     DESKTOP UI POLISH — Background intentionally unchanged
+     ========================================================= */
+  @media (min-width: 901px) {
 
-/* =========================================================
-   RESPONSIVE DESIGN (Laptop, Tablet, Mobile)
-========================================================= */
+    /* Scenario / information cards */
+    .chat-bubble {
+      padding: 19px 20px;
+      border: 1px solid rgba(255,255,255,0.45);
+    }
 
-/* ═══ Laptop / Medium Desktop (max-width: 1200px) ═══ */
-@media (max-width: 1200px) {
-  .left-panel {
-    width: 260px;
-  }
-  .right-panel {
-    width: 230px;
-  }
-  .main-area {
-    gap: 10px;
-    padding: 6px 12px;
-  }
-}
+    .cb-header {
+      gap: 9px;
+      margin-bottom: 9px;
+    }
 
-/* ═══ Tablet (max-width: 900px) ═══ */
-@media (max-width: 900px) {
-  .top-bar {
-    padding: 6px 12px;
-  }
-  .app-tagline {
-    display: none;
-  }
-  .student-badge,
-  .phase-badge {
-    padding: 4px 8px;
-    font-size: 10px;
-  }
-  .timer-display {
-    font-size: 13px;
-    padding: 4px 8px;
-  }
-  .end-btn {
-    padding: 5px 10px;
-    font-size: 10px;
-  }
+    .cb-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #163a63;
+    }
 
-  .scenario-toggle-btn {
-    display: inline-flex;
-    align-items: center;
-  }
+    .cb-speaking {
+      font-size: 15px;
+    }
 
-  .left-panel {
-    width: 240px;
-  }
+    .cb-text {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #334155;
+    }
 
-  /* Scenario card collapses into overlay on tablet */
-  .right-panel {
-    position: fixed;
-    top: 60px;
-    right: 16px;
-    width: 300px;
-    max-height: calc(100vh - 160px);
-    overflow-y: auto;
-    z-index: 99;
-    transition: all 0.3s ease;
-    transform: translateY(-20px);
-    opacity: 0;
-    pointer-events: none;
-  }
-  .right-panel.mobile-open {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
-  }
-  .mobile-scenario-close {
-    display: block;
-  }
-}
+    .vocab-list {
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.16);
+    }
 
-/* ═══ Mobile Phones (max-width: 680px) ═══ */
-@media (max-width: 680px) {
-  .top-bar {
-    padding: 6px 10px;
-    min-height: 44px;
-    gap: 4px;
-  }
-  .app-logo {
-    font-size: 13px;
-  }
-  .student-badge {
-    display: none;
-  }
-  .phase-badge {
-    padding: 3px 6px;
-    font-size: 9px;
-  }
-  .timer-display {
-    font-size: 12px;
-    padding: 3px 6px;
-  }
-  .end-btn {
-    padding: 4px 8px;
-    font-size: 9px;
-  }
+    .vocab-list h4 {
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
 
-  /* Avatar: larger on mobile so it's clearly visible */
-  .ahmad-canvas {
-    height: 50%;
-    max-width: 70%;
-    bottom: 45px;
-  }
+    .vocab-item {
+      min-height: 30px;
+      box-sizing: border-box;
+      padding: 7px 10px;
+      margin: 4px 0;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
 
-  /* Main area vertical layout on mobile */
-  .main-area {
-    flex-direction: column;
-    padding: 4px 8px;
-    gap: 4px;
-    overflow: hidden;
-  }
+    .vocab-item:hover {
+      transform: translateX(2px);
+    }
 
-  /* Left panel (Chat bubble) — compact so it doesn't cover Ahmad */
-  .left-panel {
-    width: 100%;
-    max-height: 28%;
-    flex-shrink: 0;
-    overflow-y: auto;
-    z-index: 10;
-  }
+    .vi-word {
+      font-size: 12px;
+    }
 
-  .chat-bubble {
-    padding: 8px 12px;
-    border-radius: 14px;
-  }
-  .cb-name {
-    font-size: 13px;
-  }
-  .cb-text {
-    font-size: 12px;
-    line-height: 1.4;
-  }
+    .vi-speaker {
+      font-size: 12px;
+      opacity: 0.9;
+    }
 
-  /* Action buttons: compact on mobile */
-  .action-btn {
-    padding: 8px;
-    font-size: 12px;
-    border-radius: 8px;
-  }
+    /* Main phase CTA */
+    .phase-actions {
+      padding-top: 4px;
+    }
 
-  /* Center panel: Ahmad is full width and centered */
-  .center-panel {
-    width: 100%;
-    flex: 1;
-    min-height: 0;
-    align-items: flex-end;
-  }
+    .action-btn {
+      min-height: 42px;
+      padding: 10px 14px;
+      font-size: 13px;
+      letter-spacing: 0.05px;
+      box-shadow: 0 6px 18px rgba(37,99,235,0.22);
+    }
 
-  /* Scenario card as mobile bottom/drawer modal */
-  .right-panel {
-    position: fixed;
-    top: 50px;
-    left: 10px;
-    right: 10px;
-    width: auto;
-    max-height: 75vh;
-    overflow-y: auto;
-    z-index: 100;
-    background: rgba(15, 23, 42, 0.95);
-    border-radius: 16px;
-    box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(37,99,235,0.34);
+    }
+
+    /* Scenario card */
+    .scenario-card {
+      padding: 20px;
+      border-radius: 17px;
+      border-color: rgba(255,255,255,0.18);
+      box-shadow:
+        0 10px 28px rgba(0,0,0,0.22),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .sc-tag {
+      padding: 5px 10px;
+      font-size: 10px;
+      letter-spacing: 0.15px;
+    }
+
+    .sc-title {
+      font-size: 20px;
+      line-height: 1.28;
+      margin: 10px 0 7px;
+    }
+
+    .sc-desc {
+      font-size: 12.5px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .sc-goals h4 {
+      font-size: 12.5px;
+      margin-bottom: 8px;
+    }
+
+    .sc-goal-item {
+      font-size: 11.5px;
+      line-height: 1.5;
+      margin: 6px 0;
+    }
+
+    .quote-box {
+      margin-top: 16px;
+      padding: 11px 12px;
+      border-left-width: 3px;
+    }
+
+    .quote-box p {
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+
+    /* Feedback card: clearer hierarchy without changing behavior */
+    .feedback-card {
+      padding: 13px 17px;
+      border: 1px solid rgba(15,23,42,0.08);
+    }
+
+    .fc-title {
+      font-size: 13.5px;
+    }
+
+    .fc-text {
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    /* Microphone area */
+    .mic-area {
+      min-width: 220px;
+      gap: 6px;
+    }
+
+    .mic-btn {
+      width: 66px;
+      height: 66px;
+      font-size: 28px;
+    }
+
+    .mic-status {
+      font-size: 11px;
+      padding: 4px 9px;
+    }
+
+    /* Type button should remain secondary */
+    .cb-btn {
+      min-height: 34px;
+      padding: 7px 12px;
+      font-size: 11px;
+    }
+
+    /* Header controls */
+    .timer-display {
+      min-width: 56px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .end-btn {
+      min-height: 32px;
+      padding: 6px 13px;
+    }
   }
 
-  /* Control bar (Microphone) */
-  .control-bar {
-    padding: 3px 8px 5px;
-    gap: 6px;
+
+
+  /* =========================================================
+     RESPONSIVE SYSTEM
+     Desktop → Laptop → Tablet → Mobile
+     Background image rules are intentionally unchanged.
+     ========================================================= */
+
+  /* ---------------------------------------------------------
+     LARGE LAPTOP / SMALL DESKTOP
+     1201px and below
+     --------------------------------------------------------- */
+  @media (max-width: 1200px) and (min-width: 901px) {
+
+    .top-bar {
+      padding: 7px 14px;
+    }
+
+    .main-area {
+      padding: 7px 12px;
+      gap: 10px;
+    }
+
+    .left-panel {
+      width: 250px;
+    }
+
+    .right-panel {
+      width: 225px;
+    }
+
+    .center-panel {
+      min-width: 0;
+    }
+
+    .chat-bubble {
+      padding: 15px 16px;
+    }
+
+    .cb-text {
+      font-size: 13px;
+    }
+
+    .scenario-card {
+      padding: 16px;
+    }
+
+    .sc-title {
+      font-size: 18px;
+    }
+
+    .sc-desc {
+      font-size: 11.5px;
+    }
+
+    .sc-goal-item {
+      font-size: 10.5px;
+    }
+
+    .ahmad-canvas {
+      max-width: 100%;
+      max-height: 82%;
+    }
+
+    .control-bar {
+      gap: 12px;
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    .mic-area {
+      min-width: 190px;
+    }
+
+    .mic-area::before,
+    .mic-area::after {
+      width: 58px;
+    }
+
+    .mic-area::before {
+      right: calc(50% + 38px);
+      background-size:
+        3px 7px,
+        3px 12px,
+        3px 17px,
+        3px 10px,
+        3px 21px,
+        3px 13px,
+        3px 8px,
+        3px 4px;
+    }
+
+    .mic-area::after {
+      left: calc(50% + 38px);
+      background-size:
+        3px 4px,
+        3px 8px,
+        3px 13px,
+        3px 21px,
+        3px 10px,
+        3px 17px,
+        3px 12px,
+        3px 7px;
+    }
   }
-  .mic-btn {
-    width: 38px;
-    height: 38px;
-    font-size: 17px;
+
+
+  /* ---------------------------------------------------------
+     TABLET
+     900px and below
+     Main content becomes a vertical experience.
+     --------------------------------------------------------- */
+  @media (max-width: 900px) {
+
+    .session-page {
+      height: 100dvh;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .top-bar {
+      min-height: 46px;
+      padding: 7px 12px;
+      gap: 8px;
+    }
+
+    .tb-left {
+      min-width: 0;
+    }
+
+    .app-logo {
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .app-tagline {
+      font-size: 8px;
+      white-space: nowrap;
+    }
+
+    .tb-center {
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .student-badge,
+    .phase-badge {
+      padding: 4px 8px;
+      font-size: 9px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 130px;
+    }
+
+    .tb-right {
+      gap: 7px;
+    }
+
+    .timer-display {
+      font-size: 12px;
+      padding: 4px 7px;
+      min-width: 50px;
+    }
+
+    .end-btn {
+      padding: 5px 9px;
+      font-size: 9px;
+      white-space: nowrap;
+    }
+
+    .phase-dots-bar {
+      gap: 14px;
+      padding: 4px 0 5px;
+    }
+
+    .pdot {
+      width: 8px;
+      height: 8px;
+    }
+
+    .main-area {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      padding: 8px 12px 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    /*
+      Mobile/tablet order:
+      1) Scenario
+      2) Ahmad
+      3) Chat / Vocabulary / Feedback
+    */
+    .right-panel {
+      order: 1;
+      width: 100%;
+      flex-shrink: 0;
+    }
+
+    .center-panel {
+      order: 2;
+      width: 100%;
+      min-height: 390px;
+      height: 390px;
+      flex: 0 0 390px;
+      overflow: hidden;
+      border-radius: 14px;
+    }
+
+    .left-panel {
+      order: 3;
+      width: 100%;
+      flex-shrink: 0;
+      overflow: visible;
+      gap: 9px;
+    }
+
+    .scenario-card {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 15px 16px;
+      border-radius: 14px;
+    }
+
+    .sc-title {
+      font-size: 19px;
+    }
+
+    .sc-desc {
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .sc-goal-item {
+      font-size: 11px;
+    }
+
+    .quote-box {
+      margin-top: 12px;
+    }
+
+    .chat-bubble {
+      padding: 15px 16px;
+      border-radius: 15px;
+    }
+
+    .cb-name {
+      font-size: 16px;
+    }
+
+    .cb-text {
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .vocab-list {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .feedback-box {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .phase-actions {
+      width: 100%;
+    }
+
+    .action-btn {
+      min-height: 44px;
+      font-size: 13px;
+    }
+
+    .ahmad-canvas {
+      width: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .ahmad-loading {
+      padding: 30px 10px;
+    }
+
+    .control-bar {
+      min-height: 78px;
+      box-sizing: border-box;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      grid-template-areas: "left mic right";
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px 10px;
+    }
+
+    .cb-left-area {
+      grid-area: left;
+      justify-self: end;
+    }
+
+    .mic-area {
+      grid-area: mic;
+      min-width: 170px;
+      justify-self: center;
+    }
+
+    .cb-right-area {
+      grid-area: right;
+      justify-self: start;
+    }
+
+    .mic-btn {
+      width: 60px;
+      height: 60px;
+      font-size: 25px;
+    }
+
+    .mic-ring {
+      width: 64px;
+      height: 64px;
+      top: -7px;
+    }
+
+    .mic-status {
+      font-size: 10px;
+      min-width: 110px;
+    }
+
+    .mic-area::before,
+    .mic-area::after {
+      width: 48px;
+      top: 18px;
+      opacity: 0.75;
+    }
+
+    .mic-area::before {
+      right: calc(50% + 35px);
+      background-size:
+        3px 6px,
+        3px 11px,
+        3px 16px,
+        3px 9px,
+        3px 19px,
+        3px 12px,
+        3px 7px,
+        3px 4px;
+    }
+
+    .mic-area::after {
+      left: calc(50% + 35px);
+      background-size:
+        3px 4px,
+        3px 7px,
+        3px 12px,
+        3px 19px,
+        3px 9px,
+        3px 16px,
+        3px 11px,
+        3px 6px;
+    }
+
+    .cb-btn {
+      min-height: 34px;
+      padding: 7px 10px;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .phase-dots-mini {
+      gap: 4px;
+    }
+
+    .pm {
+      width: 6px;
+      height: 6px;
+    }
+
+    .feedback-card {
+      bottom: 92px;
+      max-width: 420px;
+    }
+
+    .typing-overlay {
+      bottom: 88px;
+      width: min(92%, 520px);
+      box-sizing: border-box;
+    }
+
+    .typing-input {
+      width: 100%;
+      min-width: 0;
+    }
   }
-  .mic-ring {
-    width: 44px;
-    height: 44px;
-    top: -4px;
+
+
+  /* ---------------------------------------------------------
+     PHONE
+     600px and below
+     --------------------------------------------------------- */
+  @media (max-width: 600px) {
+
+    .top-bar {
+      min-height: 44px;
+      padding: 6px 9px;
+      gap: 6px;
+    }
+
+    .tb-left {
+      flex: 1;
+    }
+
+    .app-logo {
+      font-size: 13px;
+    }
+
+    .app-tagline {
+      display: none;
+    }
+
+    .tb-center {
+      flex: 0 1 auto;
+    }
+
+    .student-badge {
+      display: none;
+    }
+
+    .phase-badge {
+      max-width: 95px;
+      font-size: 8px;
+      padding: 4px 7px;
+    }
+
+    .tb-right {
+      flex: 0 0 auto;
+      gap: 5px;
+    }
+
+    .timer-display {
+      font-size: 11px;
+      min-width: 46px;
+      padding: 4px 6px;
+    }
+
+    .end-btn {
+      padding: 5px 7px;
+      font-size: 8px;
+      border-radius: 7px;
+    }
+
+    .phase-dots-bar {
+      gap: 11px;
+      padding: 4px 0;
+    }
+
+    .pdot {
+      width: 7px;
+      height: 7px;
+    }
+
+    .main-area {
+      gap: 8px;
+      padding: 7px 9px 10px;
+    }
+
+    .scenario-card {
+      padding: 13px 14px;
+      border-radius: 13px;
+    }
+
+    .sc-tag {
+      padding: 4px 8px;
+      font-size: 9px;
+    }
+
+    .sc-title {
+      font-size: 17px;
+      margin: 8px 0 5px;
+    }
+
+    .sc-desc {
+      font-size: 11px;
+      line-height: 1.5;
+      margin-bottom: 11px;
+    }
+
+    .sc-goals h4 {
+      font-size: 11px;
+      margin-bottom: 5px;
+    }
+
+    .sc-goal-item {
+      font-size: 10px;
+      margin: 4px 0;
+    }
+
+    .quote-box {
+      margin-top: 10px;
+      padding: 8px 9px;
+    }
+
+    .quote-box p {
+      font-size: 10px;
+    }
+
+    .quote-box span {
+      font-size: 8px;
+    }
+
+    .center-panel {
+      min-height: 330px;
+      height: 330px;
+      flex-basis: 330px;
+      border-radius: 12px;
+    }
+
+    .loading-avatar {
+      font-size: 48px;
+    }
+
+    .ahmad-loading {
+      gap: 8px;
+    }
+
+    .ahmad-loading p {
+      font-size: 12px;
+    }
+
+    .chat-bubble {
+      padding: 13px 14px;
+      border-radius: 13px;
+    }
+
+    .cb-header {
+      gap: 7px;
+      margin-bottom: 6px;
+    }
+
+    .cb-name {
+      font-size: 15px;
+    }
+
+    .cb-speaking {
+      font-size: 13px;
+    }
+
+    .cb-text {
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .vocab-list {
+      padding: 9px;
+      border-radius: 10px;
+    }
+
+    .vocab-list h4 {
+      font-size: 11px;
+    }
+
+    .vocab-item {
+      min-height: 31px;
+      padding: 6px 8px;
+    }
+
+    .vi-word {
+      font-size: 11px;
+    }
+
+    .vi-speaker {
+      font-size: 10px;
+    }
+
+    .feedback-box {
+      padding: 10px;
+      border-radius: 11px;
+    }
+
+    .feedback-box h4 {
+      font-size: 12px;
+    }
+
+    .fb-s {
+      font-size: 11px;
+      padding: 6px 4px;
+    }
+
+    .fb-note {
+      font-size: 10px;
+    }
+
+    .action-btn {
+      min-height: 42px;
+      padding: 9px 10px;
+      font-size: 12px;
+    }
+
+    .control-bar {
+      min-height: 74px;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 5px;
+      padding: 6px 8px 9px;
+    }
+
+    .mic-area {
+      min-width: 126px;
+    }
+
+    .mic-btn {
+      width: 56px;
+      height: 56px;
+      font-size: 23px;
+    }
+
+    .mic-ring {
+      width: 60px;
+      height: 60px;
+      top: -7px;
+    }
+
+    .mic-status {
+      font-size: 9px;
+      min-width: 98px;
+      padding: 3px 6px;
+    }
+
+    .mic-area::before,
+    .mic-area::after {
+      display: none;
+    }
+
+    .cb-btn {
+      min-height: 32px;
+      padding: 6px 8px;
+      font-size: 9px;
+    }
+
+    .phase-dots-mini {
+      gap: 3px;
+    }
+
+    .pm {
+      width: 5px;
+      height: 5px;
+    }
+
+    .feedback-card {
+      bottom: 84px;
+      width: calc(100% - 18px);
+      max-width: none;
+      padding: 11px 13px;
+    }
+
+    .typing-overlay {
+      bottom: 80px;
+      width: calc(100% - 18px);
+      gap: 5px;
+    }
+
+    .typing-input {
+      min-width: 0;
+      font-size: 12px;
+      padding: 8px 10px;
+    }
+
+    .send-typed-btn {
+      padding: 8px 10px;
+      font-size: 10px;
+    }
+
+    .close-typing {
+      width: 30px;
+      height: 30px;
+    }
   }
-  .mic-area {
-    min-width: 100px;
+
+
+  /* ---------------------------------------------------------
+     VERY SMALL PHONES
+     380px and below
+     --------------------------------------------------------- */
+  @media (max-width: 380px) {
+
+    .top-bar {
+      padding-left: 7px;
+      padding-right: 7px;
+    }
+
+    .app-logo {
+      font-size: 12px;
+    }
+
+    .phase-badge {
+      max-width: 78px;
+      font-size: 7px;
+    }
+
+    .timer-display {
+      min-width: 42px;
+      font-size: 10px;
+    }
+
+    .end-btn {
+      padding: 5px 6px;
+      font-size: 7px;
+    }
+
+    .phase-dots-bar {
+      gap: 9px;
+    }
+
+    .main-area {
+      padding-left: 7px;
+      padding-right: 7px;
+    }
+
+    .center-panel {
+      min-height: 285px;
+      height: 285px;
+      flex-basis: 285px;
+    }
+
+    .sc-title {
+      font-size: 16px;
+    }
+
+    .sc-desc {
+      font-size: 10px;
+    }
+
+    .sc-goal-item {
+      font-size: 9px;
+    }
+
+    .cb-text {
+      font-size: 12px;
+    }
+
+    .control-bar {
+      min-height: 70px;
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+
+    .mic-area {
+      min-width: 112px;
+    }
+
+    .mic-btn {
+      width: 52px;
+      height: 52px;
+      font-size: 21px;
+    }
+
+    .mic-ring {
+      width: 56px;
+      height: 56px;
+    }
+
+    .mic-status {
+      font-size: 8px;
+      min-width: 88px;
+    }
+
+    .cb-btn {
+      font-size: 8px;
+      padding: 6px 7px;
+    }
   }
-  .mic-status {
-    font-size: 8px;
-    min-width: 70px;
+
+
+
+  /* =========================================================
+     MOBILE / TABLET SCENARIO CARD POLISH
+     Reduce vertical space without removing content.
+     Background intentionally unchanged.
+     ========================================================= */
+  @media (max-width: 900px) {
+
+    .scenario-card {
+      padding: 13px 15px;
+    }
+
+    .sc-tag {
+      padding: 4px 9px;
+      font-size: 9px;
+    }
+
+    .sc-title {
+      margin: 7px 0 5px;
+      font-size: 18px;
+      line-height: 1.22;
+    }
+
+    .sc-desc {
+      margin-bottom: 10px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .sc-goals h4 {
+      margin-bottom: 5px;
+      font-size: 11px;
+    }
+
+    .sc-goal-item {
+      margin: 3px 0;
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .quote-box {
+      margin-top: 9px;
+      padding: 8px 10px;
+    }
+
+    .quote-box p {
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .quote-box span {
+      font-size: 8px;
+    }
   }
-  .cb-btn {
-    padding: 4px 8px;
-    font-size: 10px;
+
+  @media (max-width: 380px) {
+
+    .scenario-card {
+      padding: 11px 12px;
+    }
+
+    .sc-title {
+      font-size: 16px;
+    }
+
+    .sc-desc {
+      font-size: 10px;
+    }
+
+    .sc-goals h4 {
+      font-size: 10px;
+    }
+
+    .sc-goal-item {
+      font-size: 9px;
+    }
+
+    .quote-box {
+      margin-top: 7px;
+      padding: 7px 8px;
+    }
+
+    .quote-box p {
+      font-size: 9px;
+    }
+
+    .quote-box span {
+      font-size: 7px;
+    }
   }
-  .waveform {
-    display: none;
-  }
-}
+
 </style>
