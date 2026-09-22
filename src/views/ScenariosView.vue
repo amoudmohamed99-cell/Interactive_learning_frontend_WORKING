@@ -83,18 +83,18 @@
               </span>
 
               <strong>
-                1 <span>/ 10</span>
+                {{ progress.completed }} <span>/ {{ progress.total }}</span>
               </strong>
             </div>
 
             <div class="progress-percent">
-              10%
+              {{ progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0 }}%
             </div>
 
           </div>
 
           <div class="progress-track">
-            <div class="progress-fill"></div>
+            <div class="progress-fill" :style="{ width: (progress.total > 0 ? (progress.completed / progress.total) * 100 : 0) + '%' }"></div>
           </div>
 
           <p>
@@ -159,7 +159,9 @@
           :key="scenario.id"
           class="scenario-card"
           :class="{
-            current: scenario.number === 1,
+            current: scenario.lock_status === 'available',
+            completed: scenario.lock_status === 'completed',
+            locked: scenario.lock_status === 'locked',
             disabled: creatingSession
           }"
         >
@@ -230,7 +232,14 @@
           <div class="card-footer">
 
             <span
-              v-if="scenario.number === 1"
+              v-if="scenario.lock_status === 'completed'"
+              class="status completed-status"
+            >
+              ✔ Completed
+            </span>
+
+            <span
+              v-else-if="scenario.lock_status === 'available'"
               class="status current-status"
             >
               ● Current Session
@@ -238,15 +247,16 @@
 
             <span
               v-else
-              class="status"
+              class="status locked-status"
             >
-              Not Started
+              🔒 Locked
             </span>
 
 
             <button
+              v-if="scenario.lock_status !== 'locked'"
               class="start-btn"
-              :disabled="creatingSession"
+              :disabled="creatingSession || scenario.lock_status === 'completed'"
               @click.stop="startScenario(scenario)"
             >
 
@@ -254,6 +264,10 @@
                 v-if="creatingFor === scenario.id"
                 class="spinner-sm"
               ></span>
+
+              <span v-else-if="scenario.lock_status === 'completed'">
+                Review Session
+              </span>
 
               <span v-else>
                 Start Session
@@ -309,6 +323,7 @@ const router = useRouter()
 
 const scenarios = ref([])
 const loadingScenarios = ref(true)
+const progress = ref({ completed: 0, total: 8 })
 
 const creatingSession = ref(false)
 const creatingFor = ref(null)
@@ -328,10 +343,14 @@ const studentName =
 onMounted(async () => {
   try {
 
-    const data = await getScenarios()
+    const res = await getScenarios()
 
     scenarios.value =
-      data.data || data || []
+      res.data || res || []
+
+    if (res.progress) {
+      progress.value = res.progress
+    }
 
   } catch (error) {
 
@@ -354,7 +373,7 @@ onMounted(async () => {
 
 const startScenario = async (scenario) => {
 
-  if (creatingSession.value) {
+  if (creatingSession.value || scenario.lock_status === 'locked') {
     return
   }
 
@@ -390,10 +409,6 @@ const startScenario = async (scenario) => {
       error
     )
 
-    alert(
-      error.response?.data?.message ||
-      'حصل خطأ، جرب تاني'
-    )
   } finally {
 
     creatingSession.value = false
@@ -828,8 +843,6 @@ margin-left: calc(
 
 
 .progress-fill {
-  width: 10%;
-
   height: 100%;
 
   background:
@@ -840,6 +853,8 @@ margin-left: calc(
     );
 
   border-radius: inherit;
+
+  transition: width 0.4s ease;
 }
 
 
@@ -1004,6 +1019,62 @@ gap: 40px;
   content: '';
 
   position: absolute;
+}
+
+
+/* =========================================
+   LOCKED CARD
+========================================= */
+
+.scenario-card.locked {
+  opacity: 0.45;
+  filter: grayscale(40%);
+  pointer-events: none;
+  user-select: none;
+}
+
+.scenario-card.locked:hover {
+  transform: none;
+  border-color: #e5edf6;
+  box-shadow:
+    0 7px 24px
+    rgba(36, 75, 120, 0.055);
+}
+
+
+/* =========================================
+   COMPLETED CARD
+========================================= */
+
+.scenario-card.completed {
+  border: 1.5px solid #bbf7d0;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(240, 253, 244, 0.98),
+      rgba(255, 255, 255, 0.98)
+    );
+}
+
+.scenario-card.completed .scenario-number {
+  background:
+    linear-gradient(
+      135deg,
+      #16a34a,
+      #15803d
+    );
+  box-shadow:
+    0 5px 12px
+    rgba(22, 163, 74, 0.18);
+}
+
+.completed-status {
+  color: #16a34a !important;
+}
+
+.locked-status {
+  color: #9ca3af !important;
 }
 
 
