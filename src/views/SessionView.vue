@@ -42,6 +42,7 @@
               v-for="(goal, i) in learningGoals"
               :key="i"
               class="wc-goal-item"
+              :style="{ animationDelay: `${0.3 + i * 0.25}s` }"
             >
               <span class="wc-goal-check">✓</span>
               {{ goal }}
@@ -153,10 +154,10 @@
 
         <!-- Phase action buttons -->
         <div class="phase-actions">
-          <button v-if="currentPhase === 'intro'" class="action-btn" @click="doAdvancePhase">Ready — Show Vocabulary →</button>
-          <button v-if="currentPhase === 'vocab'" class="action-btn" @click="doAdvancePhase">Ready — Start Conversation →</button>
-          <button v-if="currentPhase === 'feedback'" class="action-btn" @click="doAdvancePhase">Next — Summary →</button>
-          <button v-if="currentPhase === 'closing'" class="action-btn finish" @click="finishSession">✅ Complete Session</button>
+          <!-- No button for intro: auto-advances to vocab after student says their name -->
+          <button v-if="currentPhase === 'vocab'" class="action-btn" @click="doAdvancePhase">🎤 ابدأ المحادثة! (Start Conversation) →</button>
+          <button v-if="currentPhase === 'feedback'" class="action-btn" @click="doAdvancePhase">📝 الملخص (Summary) →</button>
+          <button v-if="currentPhase === 'closing'" class="action-btn finish" @click="finishSession">✅ إنهاء الجلسة (Complete Session)</button>
         </div>
       </div>
 
@@ -286,6 +287,23 @@ const dismissWelcome = () => {
       speakAloud(msg, audio, format)
     }, 300)
   }
+
+  // Auto-advance: intro → vocab after Ahmad finishes greeting
+  // Per design doc: intro is just greeting/overview, then vocab shows words
+  const waitForGreetingThenAdvance = () => {
+    if (ahmadSpeaking.value) {
+      setTimeout(waitForGreetingThenAdvance, 500)
+    } else {
+      // Ahmad finished greeting — wait 2s then advance to vocab
+      setTimeout(() => {
+        if (currentPhase.value === 'intro') {
+          doAdvancePhase()
+        }
+      }, 2000)
+    }
+  }
+  // Start checking after 3s (give greeting time to begin playing)
+  setTimeout(waitForGreetingThenAdvance, 3000)
 }
 
 // When Simli connects, start chroma key processing
@@ -320,7 +338,7 @@ const phaseLabel = computed(() => {
 })
 
 const canRecord = computed(() => {
-  return !ahmadSpeaking.value && status.value !== 'processing' && (currentPhase.value === 'conversation' || currentPhase.value === 'intro')
+  return !ahmadSpeaking.value && status.value !== 'processing' && currentPhase.value === 'conversation'
 })
 
 const micRingClass = computed(() => {
@@ -331,11 +349,14 @@ const micRingClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (ahmadSpeaking.value) return 'Ahmad is speaking...'
-  if (isRecording.value) return 'Ahmad is listening...'
-  if (status.value === 'processing') return 'Ahmad is thinking...'
-  if (currentPhase.value !== 'conversation') return phaseLabel.value
-  return 'Hold to speak'
+  if (ahmadSpeaking.value) return '🔊 Ahmad is speaking...'
+  if (isRecording.value) return '🎧 Ahmad is listening...'
+  if (status.value === 'processing') return '🤔 Ahmad is thinking...'
+  if (currentPhase.value === 'intro') return '⏳ Getting ready...'
+  if (currentPhase.value === 'vocab') return '📖 Practice the words above'
+  if (currentPhase.value === 'feedback') return '📊 Review your performance'
+  if (currentPhase.value === 'closing') return '🎉 Well done!'
+  return '🎤 Hold to speak'
 })
 
 // Learning goals per scenario
@@ -468,6 +489,7 @@ const sendToAhmad = async (text, confidence) => {
     } else {
       status.value = 'ready'
     }
+
     if (r.done || r.done_phase) {
       performanceStats.value.strength = r.score_hint
         ? 'You used vocabulary and expressions well.'
@@ -896,6 +918,8 @@ const handleEnd = async () => {
   border-radius: 18px 18px 5px 18px;
   padding: 18px 20px;
   box-shadow: 0 7px 22px rgba(0,0,0,0.22);
+  direction: ltr;
+  text-align: left;
 }
 
 .cb-header {
@@ -935,7 +959,7 @@ const handleEnd = async () => {
   line-height: 1.65;
   margin: 0;
 }
-.vocab-list { background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); border-radius: 12px; padding: 10px; }
+.vocab-list { background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); border-radius: 12px; padding: 10px; direction: ltr; text-align: left; }
 .vocab-list h4 { color: #fbbf24; font-size: 12px; margin: 0 0 6px; }
 .vocab-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 10px; margin: 3px 0; cursor: pointer; transition: all 0.2s; }
 .vocab-item:hover { background: rgba(59,130,246,0.2); }
@@ -950,6 +974,8 @@ const handleEnd = async () => {
   border-radius: 14px;
   padding: 12px;
   box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+  direction: ltr;
+  text-align: left;
 }
 
 .feedback-box h4 {
@@ -1075,6 +1101,8 @@ const handleEnd = async () => {
     0 25px 65px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(255, 255, 255, 0.06);
   animation: wcSlideUp 0.5s ease-out;
+  direction: ltr;
+  text-align: left;
 }
 
 @keyframes wcSlideUp {
@@ -1174,6 +1202,19 @@ const handleEnd = async () => {
   font-size: 13px;
   padding: 6px 0;
   line-height: 1.4;
+  opacity: 0;
+  animation: wcGoalSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes wcGoalSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .wc-goal-check {
@@ -1326,6 +1367,8 @@ const handleEnd = async () => {
   border-radius: 16px;
   padding: 18px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  direction: ltr;
+  text-align: left;
 }
 
 .sc-tag {
@@ -1394,7 +1437,7 @@ const handleEnd = async () => {
 }
 
 /* ═══ FEEDBACK CARD ═══ */
-.feedback-card { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background: white; border-radius: 12px; padding: 12px 16px; max-width: 360px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.4); z-index: 20; }
+.feedback-card { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background: white; border-radius: 12px; padding: 12px 16px; max-width: 360px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.4); z-index: 20; direction: ltr; text-align: left; }
 .feedback-card.level-2 { border-top: 4px solid #f59e0b; }
 .feedback-card.level-3 { border-top: 4px solid #16a34a; }
 .fc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }

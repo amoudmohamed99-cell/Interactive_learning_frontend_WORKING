@@ -1329,11 +1329,11 @@ right: 21%;
   top: 24%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-padding: 6px;
+  gap: 10px;
+padding: 10px;
   background: rgba(255, 255, 255, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 14px;
+  border-radius: 16px;
   box-shadow: 0 10px 26px rgba(15, 42, 67, 0.08);
   backdrop-filter: blur(12px);
   z-index: 10;
@@ -1343,18 +1343,19 @@ padding: 6px;
 .rail-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-padding: 7px 9px;
-min-width: 72px;
-  border-radius: 10px;
+  gap: 12px;
+padding: 10px 14px;
+width: 120px;
+box-sizing: border-box;
+  border-radius: 12px;
   color: #334155;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 
 
 .rail-icon {
-font-size: 15px;
+font-size: 20px;
   line-height: 1;
 }
 
@@ -1363,7 +1364,7 @@ font-size: 15px;
 
   color: #334e68;
 
-  font-size: 9px;
+  font-size: 13px;
 
 }
 
@@ -1833,9 +1834,10 @@ padding: 9px 12px;
   }
 
   .feature-rail {
-    right: 2%;
+    right: 3%;
     top: 22%;
-    width: 64px;
+    width: auto;
+    max-width: 72px;
     padding: 5px;
     gap: 6px;
     z-index: 10;
@@ -2024,25 +2026,26 @@ padding: 9px 12px;
   }
 
   .feature-rail {
-    right: 1%;
+    right: 2%;
     top: 18%;
-    width: 60px;
-    padding: 6px;
-    gap: 5px;
+    width: auto;
+    max-width: 68px;
+    padding: 5px;
+    gap: 4px;
   }
 
   .rail-item {
-    padding: 7px 9px;
-    min-width: 70px;
-    gap: 8px;
+    padding: 6px 7px;
+    min-width: 0;
+    gap: 6px;
   }
 
   .rail-icon {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .rail-item strong {
-    font-size: 8px;
+    font-size: 7px;
   }
 
   .journey-card {
@@ -2102,8 +2105,11 @@ padding: 9px 12px;
   }
 
   .feature-rail {
-    right: 1%;
+    right: 2%;
     top: 15%;
+    max-width: 62px;
+    padding: 4px;
+    gap: 3px;
   }
 
   .journey-card {

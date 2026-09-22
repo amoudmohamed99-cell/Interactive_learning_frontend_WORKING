@@ -498,6 +498,7 @@ const getScenarioDescription = (number) => {
 .scenarios-page {
     direction: ltr;
   min-height: 100vh;
+  height: 100vh;
   direction: ltr;
   background:
     linear-gradient(
@@ -507,6 +508,8 @@ const getScenarioDescription = (number) => {
     );
 
   color: #102a43;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 

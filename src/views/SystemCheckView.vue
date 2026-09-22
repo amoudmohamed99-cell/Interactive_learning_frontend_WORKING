@@ -771,7 +771,7 @@ const goToSession = () => {
 
 .check-page {
   min-height: 100vh;
-
+  height: 100vh;
   background: #f7faff;
 
   color: #102a43;
@@ -779,6 +779,7 @@ const goToSession = () => {
   direction: ltr;
 
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 
