@@ -7,7 +7,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-target: 'https://interactive-learning.test',
+target: 'https://interactivelearning-production.up.railway.app',
         changeOrigin: true,
         secure: false
       }
