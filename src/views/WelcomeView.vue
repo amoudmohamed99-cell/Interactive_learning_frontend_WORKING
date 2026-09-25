@@ -1136,7 +1136,7 @@ background: rgba(160,185,215,1);
   height: 100%;
   max-height: calc(100vh - 120px);
   min-height: 480px;
-  overflow: visible;
+  overflow: hidden;
   border-radius: 0;
   background: transparent;
 }
@@ -1325,18 +1325,19 @@ font-size: 13px;
 
 .feature-rail {
   position: absolute;
-right: 21%;
+  right: 21%;
   top: 24%;
   display: flex;
   flex-direction: column;
   gap: 10px;
-padding: 10px;
+  padding: 10px;
   background: rgba(255, 255, 255, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 16px;
   box-shadow: 0 10px 26px rgba(15, 42, 67, 0.08);
   backdrop-filter: blur(12px);
   z-index: 10;
+  max-width: calc(100% - 10px);
 }
 
 
@@ -1344,13 +1345,14 @@ padding: 10px;
   display: flex;
   align-items: center;
   gap: 12px;
-padding: 10px 14px;
-width: 120px;
-box-sizing: border-box;
+  padding: 10px 14px;
+  width: 120px;
+  box-sizing: border-box;
   border-radius: 12px;
   color: #334155;
   font-size: 14px;
   font-weight: 650;
+  white-space: nowrap;
 }
 
 
@@ -1650,8 +1652,10 @@ padding: 9px 12px;
   }
 
   .feature-rail {
-    right: 8%;
+    right: 5%;
     top: 22%;
+    max-width: 160px;
+    overflow: hidden;
   }
 
   .journey-card {
@@ -1793,7 +1797,6 @@ padding: 9px 12px;
     height: 520px;
     min-height: 520px;
     margin: 0 auto;
-    overflow: visible;
   }
 
   .avatar-wrapper {
@@ -1834,13 +1837,14 @@ padding: 9px 12px;
   }
 
   .feature-rail {
-    right: 3%;
+    right: 2%;
     top: 22%;
     width: auto;
-    max-width: 72px;
+    max-width: 110px;
     padding: 5px;
     gap: 6px;
     z-index: 10;
+    overflow: hidden;
   }
 
   .rail-item {
@@ -2029,9 +2033,10 @@ padding: 9px 12px;
     right: 2%;
     top: 18%;
     width: auto;
-    max-width: 68px;
-    padding: 5px;
-    gap: 4px;
+    max-width: 90px;
+    padding: 4px;
+    gap: 3px;
+    overflow: hidden;
   }
 
   .rail-item {
@@ -2107,9 +2112,10 @@ padding: 9px 12px;
   .feature-rail {
     right: 2%;
     top: 15%;
-    max-width: 62px;
+    max-width: 80px;
     padding: 4px;
     gap: 3px;
+    overflow: hidden;
   }
 
   .journey-card {
