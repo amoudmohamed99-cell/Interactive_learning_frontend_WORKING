@@ -1862,25 +1862,19 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
-  /* Avatar: small and grounded at bottom on mobile */
+  /* Avatar: video-call style circle on mobile */
   .ahmad-canvas {
-    height: 28vh;
-    max-width: 40%;
-    bottom: 50px;
-    border-radius: 16px;
-    filter:
-      drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
-  }
-
-  /* Ground the avatar with a gradient at bottom */
-  .bg-overlay {
-    background: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.1) 0%,
-      rgba(0, 0, 0, 0.15) 50%,
-      rgba(0, 0, 0, 0.7) 85%,
-      rgba(0, 0, 0, 0.85) 100%
-    );
+    height: 120px;
+    width: 120px;
+    max-width: none;
+    bottom: 65px;
+    left: auto;
+    right: 12px;
+    transform: none;
+    border-radius: 50%;
+    border: 3px solid rgba(96, 165, 250, 0.7);
+    object-fit: cover;
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
   }
 
   /* Main area vertical layout on mobile */
