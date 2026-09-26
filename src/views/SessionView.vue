@@ -209,7 +209,7 @@
         <div class="mic-ring" :class="micRingClass"></div>
         <button class="mic-btn" :class="{ active: isRecording, disabled: !canRecord }"
           @mousedown="startRecording" @mouseup="stopRecording"
-          @touchstart.prevent="startRecording" @touchend.prevent="stopRecording"
+          @touchstart.prevent="startRecording" @touchend.prevent="stopRecording" @touchcancel.prevent="stopRecording"
           :disabled="!canRecord">🎤</button>
         <span class="mic-status">{{ statusText }}</span>
       </div>
@@ -338,7 +338,7 @@ const phaseLabel = computed(() => {
 })
 
 const canRecord = computed(() => {
-  return !ahmadSpeaking.value && status.value !== 'processing' && currentPhase.value === 'conversation'
+  return !ahmadSpeaking.value && status.value !== 'processing' && (currentPhase.value === 'conversation' || currentPhase.value === 'intro')
 })
 
 const micRingClass = computed(() => {
@@ -352,7 +352,7 @@ const statusText = computed(() => {
   if (ahmadSpeaking.value) return '🔊 Ahmad is speaking...'
   if (isRecording.value) return '🎧 Ahmad is listening...'
   if (status.value === 'processing') return '🤔 Ahmad is thinking...'
-  if (currentPhase.value === 'intro') return '⏳ Getting ready...'
+  if (currentPhase.value === 'intro') return '🎤 Hold to speak'
   if (currentPhase.value === 'vocab') return '📖 Practice the words above'
   if (currentPhase.value === 'feedback') return '📊 Review your performance'
   if (currentPhase.value === 'closing') return '🎉 Well done!'
@@ -451,11 +451,12 @@ if (SR) {
   }
   recognition.onerror = (e) => {
     console.warn('Speech recognition error:', e.error)
-    isRecording.value = false; status.value = 'ready'
-    // On mobile, auto-restart on 'no-speech' error
+    // On mobile, auto-restart on 'no-speech' error if we were recording
     if (isMobile && e.error === 'no-speech' && isRecording.value) {
       try { recognition.start() } catch(err) {}
+      return  // Don't reset state, keep recording
     }
+    isRecording.value = false; status.value = 'ready'
   }
   recognition.onend = () => {
     // On mobile (continuous=false), restart if still recording
@@ -465,20 +466,37 @@ if (SR) {
   }
 }
 
+// Pre-request mic permission on mobile so getUserMedia doesn't block during hold
+let micPermissionGranted = false
+if (isMobile) {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    stream.getTracks().forEach(t => t.stop())  // Release immediately
+    micPermissionGranted = true
+  }).catch(() => {})
+}
+
+let recordingStarting = false  // Guard against race condition on mobile
+
 const startRecording = async () => {
-  if (!canRecord.value) return
-  // Request mic permission first (required on mobile)
+  if (!canRecord.value || recordingStarting) return
+  recordingStarting = true
+  // Request mic permission (should be instant if pre-granted)
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
   } catch (e) {
     console.error('Mic permission denied:', e)
     alert('Please allow microphone access to continue')
+    recordingStarting = false
     return
   }
   isRecording.value = true; status.value = 'listening'; feedbackCard.value = null
+  recordingStarting = false
   try { recognition?.start() } catch(e) { console.warn('Recognition start failed:', e) }
 }
 const stopRecording = () => {
+  // On mobile, if the recording hasn't actually started yet (getUserMedia still pending), ignore
+  if (recordingStarting) return
+  if (!isRecording.value) return
   isRecording.value = false
   try { recognition?.stop() } catch(e) {}
   // Release mic
