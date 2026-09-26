@@ -131,6 +131,20 @@
           <p class="cb-text">{{ ahmadLastMessage }}</p>
         </div>
 
+        <!-- Adaptive Feedback Card (inside panel, not floating) -->
+        <transition name="slide-up">
+          <div v-if="feedbackCard && currentPhase === 'conversation'" class="feedback-card" :class="'level-' + feedbackCard.level">
+            <div class="fc-header">
+              <span class="fc-title">{{ feedbackCard.title }}</span>
+              <div class="attempt-dots">
+                <span v-for="i in 3" :key="i" class="dot" :class="{ used: i <= feedbackCard.attempt }"></span>
+              </div>
+            </div>
+            <p class="fc-text">{{ feedbackCard.text }}</p>
+            <button v-if="feedbackCard.level === 3" class="listen-btn" @click="speakVocab(feedbackCard.text)">🔊 Listen</button>
+          </div>
+        </transition>
+
         <!-- Vocab flashcard (vocab phase) -->
         <div v-if="currentPhase === 'vocab'" class="vocab-section">
           <div class="vocab-header">
@@ -144,9 +158,6 @@
           </div>
           <div class="vocab-nav">
             <button class="vocab-nav-btn" @click="vocabIndex = Math.max(0, vocabIndex - 1)" :disabled="vocabIndex === 0">← Prev</button>
-            <div class="vocab-dots">
-              <span v-for="(_, i) in vocabWithSentences" :key="i" class="vocab-dot" :class="{ active: i === vocabIndex }" @click="vocabIndex = i"></span>
-            </div>
             <button class="vocab-nav-btn" @click="vocabIndex = Math.min(vocabWithSentences.length - 1, vocabIndex + 1)" :disabled="vocabIndex === vocabWithSentences.length - 1">Next →</button>
           </div>
         </div>
@@ -194,19 +205,8 @@
       </div>
     </div>
 
-    <!-- Adaptive Feedback Card (conversation) -->
-    <transition name="slide-up">
-      <div v-if="feedbackCard && currentPhase === 'conversation'" class="feedback-card" :class="'level-' + feedbackCard.level">
-        <div class="fc-header">
-          <span class="fc-title">{{ feedbackCard.title }}</span>
-          <div class="attempt-dots">
-            <span v-for="i in 3" :key="i" class="dot" :class="{ used: i <= feedbackCard.attempt }"></span>
-          </div>
-        </div>
-        <p class="fc-text">{{ feedbackCard.text }}</p>
-        <button v-if="feedbackCard.level === 3" class="listen-btn" @click="speakVocab(feedbackCard.text)">🔊 Listen</button>
-      </div>
-    </transition>
+
+
 
     <!-- ═══ Bottom Control Bar ═══ -->
     <footer class="control-bar">
@@ -1593,7 +1593,7 @@ const handleEnd = async () => {
 }
 
 /* ═══ FEEDBACK CARD ═══ */
-.feedback-card { position: absolute; bottom: 110px; left: 50%; transform: translateX(-50%); background: white; border-radius: 12px; padding: 12px 16px; max-width: 360px; width: 90%; box-shadow: 0 8px 30px rgba(0,0,0,0.4); z-index: 20; direction: ltr; text-align: left; }
+.feedback-card { position: relative; bottom: auto; left: auto; transform: none; background: white; border-radius: 12px; padding: 12px 16px; max-width: 100%; width: 100%; box-sizing: border-box; box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 20; direction: ltr; text-align: left; }
 .feedback-card.level-2 { border-top: 4px solid #f59e0b; }
 .feedback-card.level-3 { border-top: 4px solid #16a34a; }
 .fc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
