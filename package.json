@@ -12,7 +12,7 @@
     "@mediapipe/camera_utils": "^0.3.1675466862",
     "@mediapipe/selfie_segmentation": "^0.1.1675465747",
     "axios": "^1.20.0",
-    "simli-client": "^3.0.2",
+    "simli-client": "^3.0.1",
     "vue": "^3.5.41",
     "vue-router": "^4.6.4"
   },
