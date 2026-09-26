@@ -1,7 +1,12 @@
 import axios from 'axios'
 
+// Production: direct to Railway backend
+// Local dev: VITE_API_URL not set → uses /api/v1 (proxied by Vite)
+const API_URL = import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? '/api/v1' : 'https://interactivelearning-production.up.railway.app/api/v1')
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: API_URL,
   headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
 })
 
