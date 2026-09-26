@@ -1994,7 +1994,7 @@ const handleEnd = async () => {
     );
   }
 
-  /* Avatar: show head+shoulders, clipped by overflow:hidden */
+  /* Avatar: for small desktop windows — above control bar */
   .ahmad-canvas {
     height: 55%;
     width: auto;
@@ -2096,6 +2096,13 @@ const handleEnd = async () => {
   }
   .waveform {
     display: none;
+  }
+}
+
+/* Actual mobile phones only (portrait + touch) — push Ahmad lower for clipping */
+@media (max-width: 680px) and (orientation: portrait) and (pointer: coarse) {
+  .ahmad-canvas {
+    bottom: -25px !important;
   }
 }
 </style>
