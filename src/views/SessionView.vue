@@ -1994,12 +1994,12 @@ const handleEnd = async () => {
     );
   }
 
-  /* Avatar: push down so lower body is clipped, showing head+shoulders only */
+  /* Avatar: show head+shoulders, clipped by overflow:hidden */
   .ahmad-canvas {
     height: 55%;
     width: auto;
     max-width: 70%;
-    bottom: -30px;
+    bottom: 15px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
