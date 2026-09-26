@@ -502,10 +502,14 @@ const testMic = async () => {
 
   try {
 
+    // Step 1: Request mic permission
     const stream =
       await navigator.mediaDevices.getUserMedia({
         audio: true
       })
+
+    // Step 2: Release mic immediately so SpeechRecognition can use it
+    stream.getTracks().forEach(t => t.stop())
 
     const SpeechRecognition =
       window.SpeechRecognition ||
@@ -515,15 +519,10 @@ const testMic = async () => {
 
       micResult.value = {
         ok: true,
-        message: 'الميكروفون يعمل ✅'
+        message: 'Microphone is working ✅'
       }
 
       micPassed.value = true
-
-      stream
-        .getTracks()
-        .forEach(t => t.stop())
-
       micTesting.value = false
 
       return
@@ -546,30 +545,28 @@ const testMic = async () => {
       micResult.value = {
         ok: true,
         message:
-          `✅ تم التقاط: "${text}" — دقة: ${Math.round(confidence * 100)}%`
+          `✅ Heard: "${text}" — ${Math.round(confidence * 100)}%`
       }
 
       micPassed.value = true
       micTesting.value = false
-
-      stream
-        .getTracks()
-        .forEach(t => t.stop())
     }
 
-    recognition.onerror = () => {
-
-      micResult.value = {
-        ok: false,
-        message:
-          '⚠️ لم يتم التقاط صوت. حاول مرة أخرى'
+    recognition.onerror = (e) => {
+      console.warn('Mic test error:', e.error)
+      // 'no-speech' means mic works but no speech detected
+      if (e.error === 'no-speech') {
+        micResult.value = {
+          ok: false,
+          message: '⚠️ No speech detected. Speak louder and try again'
+        }
+      } else {
+        micResult.value = {
+          ok: false,
+          message: '⚠️ Could not capture audio. Try again'
+        }
       }
-
       micTesting.value = false
-
-      stream
-        .getTracks()
-        .forEach(t => t.stop())
     }
 
     recognition.onend = () => {
@@ -582,16 +579,12 @@ const testMic = async () => {
         micResult.value = {
           ok: false,
           message:
-            '⚠️ لم يتم التقاط كلام. حاول بصوت أوضح'
+            '⚠️ No speech detected. Speak louder and try again'
         }
 
       }
 
       micTesting.value = false
-
-      stream
-        .getTracks()
-        .forEach(t => t.stop())
     }
 
     setTimeout(() => {
@@ -600,7 +593,7 @@ const testMic = async () => {
         recognition.stop()
       } catch (e) {}
 
-    }, 5000)
+    }, 7000) // Give mobile users more time (was 5s)
 
     recognition.start()
 
