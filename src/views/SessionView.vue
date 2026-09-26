@@ -1864,15 +1864,16 @@ const handleEnd = async () => {
 
   /* Avatar: video-call style circle on mobile */
   .ahmad-canvas {
-    height: 120px;
-    width: 120px;
+    height: 130px;
+    width: 130px;
     max-width: none;
     bottom: 65px;
-    left: auto;
-    right: 12px;
-    transform: none;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
     border-radius: 50%;
     border: 3px solid rgba(96, 165, 250, 0.7);
+    background: #0f172a;
     object-fit: cover;
     filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
   }
