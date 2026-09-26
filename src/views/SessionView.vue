@@ -1844,11 +1844,11 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
-  /* Avatar: larger on mobile so it's clearly visible */
+  /* Avatar: properly sized and anchored on mobile */
   .ahmad-canvas {
-    height: 50%;
-    max-width: 70%;
-    bottom: 45px;
+    height: 35%;
+    max-width: 55%;
+    bottom: 55px;
   }
 
   /* Main area vertical layout on mobile */
