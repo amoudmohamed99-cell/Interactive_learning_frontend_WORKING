@@ -131,12 +131,23 @@
           <p class="cb-text">{{ ahmadLastMessage }}</p>
         </div>
 
-        <!-- Vocab list (vocab phase) -->
-        <div v-if="currentPhase === 'vocab'" class="vocab-list">
-          <h4>📖 Key Vocabulary</h4>
-          <div v-for="item in vocabWithSentences" :key="item.word" class="vocab-item" @click="speakVocab(item.sentence || item.word)">
-            <span class="vi-word">{{ item.word }}</span>
-            <span class="vi-speaker">🔊</span>
+        <!-- Vocab flashcard (vocab phase) -->
+        <div v-if="currentPhase === 'vocab'" class="vocab-section">
+          <div class="vocab-header">
+            <h4 class="vocab-title">📖 Key Vocabulary</h4>
+            <span class="vocab-counter">{{ vocabIndex + 1 }} / {{ vocabWithSentences.length }}</span>
+          </div>
+          <div class="vocab-flashcard" @click="speakVocab(vocabWithSentences[vocabIndex]?.sentence || vocabWithSentences[vocabIndex]?.word)">
+            <span class="vf-word">{{ vocabWithSentences[vocabIndex]?.word }}</span>
+            <p class="vf-sentence">{{ vocabWithSentences[vocabIndex]?.sentence }}</p>
+            <span class="vf-tap">Tap to hear 🔊</span>
+          </div>
+          <div class="vocab-nav">
+            <button class="vocab-nav-btn" @click="vocabIndex = Math.max(0, vocabIndex - 1)" :disabled="vocabIndex === 0">← Prev</button>
+            <div class="vocab-dots">
+              <span v-for="(_, i) in vocabWithSentences" :key="i" class="vocab-dot" :class="{ active: i === vocabIndex }" @click="vocabIndex = i"></span>
+            </div>
+            <button class="vocab-nav-btn" @click="vocabIndex = Math.min(vocabWithSentences.length - 1, vocabIndex + 1)" :disabled="vocabIndex === vocabWithSentences.length - 1">Next →</button>
           </div>
         </div>
 
@@ -252,6 +263,7 @@ const communicativeFunction = ref('')
 const scenarioContext = ref('')
 const completionCriteria = ref('')
 const vocabulary = ref([])
+const vocabIndex = ref(0)
 const scenarioNumber = ref(1)
 const status = ref('ready')
 const ahmadSpeaking = ref(false)
@@ -1009,12 +1021,106 @@ const handleEnd = async () => {
   line-height: 1.65;
   margin: 0;
 }
-.vocab-list { background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); border-radius: 12px; padding: 10px; direction: ltr; text-align: left; }
-.vocab-list h4 { color: #fbbf24; font-size: 12px; margin: 0 0 6px; }
-.vocab-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.08); border-radius: 6px; padding: 6px 10px; margin: 3px 0; cursor: pointer; transition: all 0.2s; }
-.vocab-item:hover { background: rgba(59,130,246,0.2); }
-.vi-word { color: #93c5fd; font-size: 12px; font-weight: 600; }
-.vi-speaker { font-size: 11px; }
+.vocab-section {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 14px;
+  direction: ltr;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.vocab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.vocab-title {
+  color: #fbbf24;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+.vocab-counter {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+.vocab-flashcard {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(139, 92, 246, 0.12));
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 14px;
+  padding: 18px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.vocab-flashcard:hover {
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+}
+.vocab-flashcard:active {
+  transform: scale(0.97);
+}
+.vf-word {
+  display: block;
+  color: #60a5fa;
+  font-size: 22px;
+  font-weight: 800;
+  text-transform: capitalize;
+  margin-bottom: 6px;
+}
+.vf-sentence {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 8px;
+  font-style: italic;
+}
+.vf-tap {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 11px;
+}
+.vocab-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.vocab-nav-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.vocab-nav-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+.vocab-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.vocab-dots {
+  display: flex;
+  gap: 6px;
+}
+.vocab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.vocab-dot.active {
+  background: #60a5fa;
+  transform: scale(1.3);
+}
 
 /* ═══ FEEDBACK ═══ */
 .feedback-box {
@@ -1110,10 +1216,10 @@ const handleEnd = async () => {
 */
 .ahmad-canvas {
   position: absolute;
-  bottom: 60px;
+  bottom: 55px;
   left: 50%;
   transform: translateX(-50%);
-  height: 65%;
+  height: 55%;
   width: auto;
   max-width: 50%;
   object-fit: contain;
@@ -1866,10 +1972,10 @@ const handleEnd = async () => {
 
   /* Avatar: push down so Ahmad sits behind the counter/desk in the background */
   .ahmad-canvas {
-    height: 50%;
+    height: 38%;
     width: auto;
     max-width: 65%;
-    bottom: -15px;
+    bottom: 50px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
@@ -1887,12 +1993,12 @@ const handleEnd = async () => {
     overflow: hidden;
   }
 
-  /* Left panel (Chat bubble) — compact so it doesn't cover Ahmad */
+  /* Left panel (Chat bubble + vocab) — no scroll, fits content */
   .left-panel {
     width: 100%;
-    max-height: 28%;
+    max-height: none;
     flex-shrink: 0;
-    overflow-y: auto;
+    overflow: visible;
     z-index: 10;
   }
 
