@@ -1864,12 +1864,12 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
-  /* Avatar: same natural style as desktop, sized for mobile */
+  /* Avatar: push down so Ahmad sits behind the counter/desk in the background */
   .ahmad-canvas {
-    height: 45%;
+    height: 50%;
     width: auto;
     max-width: 65%;
-    bottom: 55px;
+    bottom: -15px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
