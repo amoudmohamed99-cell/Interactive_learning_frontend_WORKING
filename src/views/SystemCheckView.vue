@@ -722,7 +722,7 @@ const testSpeaker = async () => {
 
     // No audio returned
     alert(
-      '❌ لم يتم استلام الصوت — تأكد من تشغيل Laragon وعمل Restart'
+      '❌ No audio received — please try again later'
     )
 
     speakerTesting.value = false
@@ -735,7 +735,7 @@ const testSpeaker = async () => {
     )
 
     alert(
-      '❌ لا يمكن الاتصال بالسيرفر — تأكد من تشغيل Laragon'
+      '❌ Cannot connect to server — please check your internet connection'
     )
 
     speakerTesting.value = false

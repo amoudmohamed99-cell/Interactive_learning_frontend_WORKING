@@ -472,7 +472,7 @@ const startRecording = async () => {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
   } catch (e) {
     console.error('Mic permission denied:', e)
-    alert('يرجى السماح بالوصول للميكروفون')
+    alert('Please allow microphone access to continue')
     return
   }
   isRecording.value = true; status.value = 'listening'; feedbackCard.value = null
