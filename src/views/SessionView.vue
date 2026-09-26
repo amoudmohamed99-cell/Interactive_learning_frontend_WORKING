@@ -1864,20 +1864,19 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
-  /* Avatar: video-call style circle on mobile */
+  /* Avatar: same natural style as desktop, sized for mobile */
   .ahmad-canvas {
-    height: 130px;
-    width: 130px;
-    max-width: none;
-    bottom: 65px;
+    height: 45%;
+    width: auto;
+    max-width: 65%;
+    bottom: 55px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
-    border-radius: 50%;
-    border: 3px solid rgba(96, 165, 250, 0.7);
-    background: #0f172a;
-    object-fit: cover;
-    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
+    border-radius: 0;
+    border: none;
+    background: none;
+    object-fit: contain;
   }
 
   /* Main area vertical layout on mobile */
