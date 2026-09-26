@@ -1978,7 +1978,18 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
-  /* Avatar: push down so Ahmad sits behind the counter/desk in the background */
+  /* Dark gradient at bottom so Ahmad doesn't look floating over busy backgrounds */
+  .bg-overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.15) 0%,
+      rgba(0, 0, 0, 0.2) 40%,
+      rgba(0, 0, 0, 0.65) 70%,
+      rgba(10, 20, 40, 0.9) 100%
+    );
+  }
+
+  /* Avatar: properly sized for mobile */
   .ahmad-canvas {
     height: 38%;
     width: auto;
