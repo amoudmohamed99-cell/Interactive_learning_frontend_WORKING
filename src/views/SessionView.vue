@@ -1978,22 +1978,27 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
-  /* Dark gradient at bottom so Ahmad doesn't look floating over busy backgrounds */
+  /* Shift background down so furniture aligns with Ahmad on tall mobile screens */
+  .scene-viewport {
+    background-position: center 65%;
+  }
+
+  /* Darken bottom area for Ahmad */
   .bg-overlay {
     background: linear-gradient(
       to bottom,
-      rgba(0, 0, 0, 0.15) 0%,
-      rgba(0, 0, 0, 0.2) 40%,
-      rgba(0, 0, 0, 0.65) 70%,
-      rgba(10, 20, 40, 0.9) 100%
+      rgba(0, 0, 0, 0.1) 0%,
+      rgba(0, 0, 0, 0.15) 50%,
+      rgba(0, 0, 0, 0.5) 75%,
+      rgba(10, 20, 40, 0.85) 100%
     );
   }
 
-  /* Avatar: properly sized for mobile */
+  /* Avatar: bigger to match desktop proportions */
   .ahmad-canvas {
-    height: 38%;
+    height: 45%;
     width: auto;
-    max-width: 65%;
+    max-width: 70%;
     bottom: 50px;
     left: 50%;
     right: auto;
