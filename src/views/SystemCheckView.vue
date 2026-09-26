@@ -452,6 +452,7 @@
 
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { API_URL } from '../api'
 
 const route = useRoute()
 const router = useRouter()
@@ -635,7 +636,7 @@ const testSpeaker = async () => {
 
     const res =
       await fetch(
-        '/api/v1/tts',
+        `${API_URL}/tts`,
         {
           method: 'POST',
 

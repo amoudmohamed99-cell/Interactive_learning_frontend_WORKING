@@ -237,7 +237,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { startSession, speak, endSession, advancePhase as apiAdvancePhase } from '../api'
+import { startSession, speak, endSession, advancePhase as apiAdvancePhase, API_URL } from '../api'
 import { useSimli } from '../composables/useSimli'
 import { useChromaKey } from '../composables/useChromaKey'
 
@@ -565,7 +565,7 @@ const speakAloud = async (text, audioBase64, audioFormat) => {
   // No audio from backend — fetch it separately via TTS endpoint
   try {
     const token = localStorage.getItem('token')
-    const res = await fetch('/api/v1/tts', {
+    const res = await fetch(`${API_URL}/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ text }),
@@ -617,7 +617,7 @@ const speakVocab = async (text) => {
   ahmadLastMessage.value = text
   try {
     const token = localStorage.getItem('token')
-    const res = await fetch('/api/v1/tts', {
+    const res = await fetch(`${API_URL}/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ text }),
