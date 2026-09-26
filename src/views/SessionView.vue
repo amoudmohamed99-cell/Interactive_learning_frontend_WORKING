@@ -1978,28 +1978,28 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
-  /* Shift background down so furniture aligns with Ahmad on tall mobile screens */
+  /* Clip Ahmad's lower body so only head+shoulders show (like desktop) */
   .scene-viewport {
     background-position: center 65%;
+    overflow: hidden;
   }
 
-  /* Darken bottom area for Ahmad */
+  /* Subtle darken at bottom */
   .bg-overlay {
     background: linear-gradient(
       to bottom,
       rgba(0, 0, 0, 0.1) 0%,
-      rgba(0, 0, 0, 0.15) 50%,
-      rgba(0, 0, 0, 0.5) 75%,
-      rgba(10, 20, 40, 0.85) 100%
+      rgba(0, 0, 0, 0.15) 60%,
+      rgba(0, 0, 0, 0.45) 100%
     );
   }
 
-  /* Avatar: bigger to match desktop proportions */
+  /* Avatar: push down so lower body is clipped, showing head+shoulders only */
   .ahmad-canvas {
-    height: 45%;
+    height: 55%;
     width: auto;
     max-width: 70%;
-    bottom: 50px;
+    bottom: -30px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
