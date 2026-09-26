@@ -433,7 +433,6 @@ const scenarioContexts = {
 
 // ═══ SPEECH RECOGNITION ═══
 let recognition = null
-let micStream = null
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
@@ -480,15 +479,20 @@ let recordingStarting = false  // Guard against race condition on mobile
 const startRecording = async () => {
   if (!canRecord.value || recordingStarting) return
   recordingStarting = true
-  // Request mic permission (should be instant if pre-granted)
+
+  // Request mic permission — but release the stream immediately!
+  // On mobile, getUserMedia and SpeechRecognition CANNOT share the mic.
+  // We only call getUserMedia to trigger the permission prompt if needed.
   try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    stream.getTracks().forEach(t => t.stop())  // Release mic immediately!
   } catch (e) {
     console.error('Mic permission denied:', e)
     alert('Please allow microphone access to continue')
     recordingStarting = false
     return
   }
+
   isRecording.value = true; status.value = 'listening'; feedbackCard.value = null
   recordingStarting = false
   try { recognition?.start() } catch(e) { console.warn('Recognition start failed:', e) }
@@ -499,8 +503,6 @@ const stopRecording = () => {
   if (!isRecording.value) return
   isRecording.value = false
   try { recognition?.stop() } catch(e) {}
-  // Release mic
-  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null }
   if (status.value === 'listening') status.value = 'ready'
 }
 
