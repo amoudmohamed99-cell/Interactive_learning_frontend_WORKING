@@ -433,11 +433,14 @@ const scenarioContexts = {
 
 // ═══ SPEECH RECOGNITION ═══
 let recognition = null
+let micStream = null
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
 if (SR) {
   recognition = new SR()
   recognition.lang = 'en-US'
-  recognition.continuous = true
+  recognition.continuous = !isMobile // continuous breaks on mobile
   recognition.interimResults = true
   recognition.onresult = (e) => {
     let finalText = ''
@@ -446,17 +449,40 @@ if (SR) {
     }
     if (finalText) sendToAhmad(finalText, e.results[e.results.length - 1][0].confidence)
   }
-  recognition.onerror = () => { isRecording.value = false; status.value = 'ready' }
+  recognition.onerror = (e) => {
+    console.warn('Speech recognition error:', e.error)
+    isRecording.value = false; status.value = 'ready'
+    // On mobile, auto-restart on 'no-speech' error
+    if (isMobile && e.error === 'no-speech' && isRecording.value) {
+      try { recognition.start() } catch(err) {}
+    }
+  }
+  recognition.onend = () => {
+    // On mobile (continuous=false), restart if still recording
+    if (isMobile && isRecording.value) {
+      try { recognition.start() } catch(e) {}
+    }
+  }
 }
 
-const startRecording = () => {
+const startRecording = async () => {
   if (!canRecord.value) return
+  // Request mic permission first (required on mobile)
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  } catch (e) {
+    console.error('Mic permission denied:', e)
+    alert('يرجى السماح بالوصول للميكروفون')
+    return
+  }
   isRecording.value = true; status.value = 'listening'; feedbackCard.value = null
-  try { recognition?.start() } catch(e) {}
+  try { recognition?.start() } catch(e) { console.warn('Recognition start failed:', e) }
 }
 const stopRecording = () => {
   isRecording.value = false
   try { recognition?.stop() } catch(e) {}
+  // Release mic
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null }
   if (status.value === 'listening') status.value = 'ready'
 }
 
