@@ -706,8 +706,16 @@ const doAdvancePhase = async () => {
     updatePhaseState(r.phase)
 
     if (r.message) {
-      ahmadLastMessage.value = r.message
-      await speakAloud(r.message, r.audio, r.audio_format)
+      // If entering feedback phase, add performance details to what Ahmad says
+      let fullMessage = r.message
+      if (currentPhase.value === 'feedback' && performanceStats.value) {
+        const s = performanceStats.value
+        fullMessage += ` You had ${s.correct} correct responses and ${s.needsWork} that need improvement out of ${s.totalTurns} total turns.`
+        if (s.strength) fullMessage += ` ${s.strength}`
+        if (s.improvement) fullMessage += ` ${s.improvement}`
+      }
+      ahmadLastMessage.value = fullMessage
+      await speakAloud(fullMessage, r.audio, r.audio_format)
     }
     if (r.done) {
       stopAvatar()
