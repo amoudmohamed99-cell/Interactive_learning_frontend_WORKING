@@ -1844,11 +1844,9 @@ const handleEnd = async () => {
     font-size: 9px;
   }
 
-  /* Avatar: properly sized and anchored on mobile */
+  /* Avatar: hide on mobile — audio+text only */
   .ahmad-canvas {
-    height: 35%;
-    max-width: 55%;
-    bottom: 55px;
+    display: none;
   }
 
   /* Main area vertical layout on mobile */
