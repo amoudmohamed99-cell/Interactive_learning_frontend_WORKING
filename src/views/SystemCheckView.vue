@@ -651,8 +651,20 @@ const testSpeaker = async () => {
         }
       )
 
+    console.log('TTS response status:', res.status)
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('TTS error response:', errText)
+      alert('❌ Server error: ' + res.status)
+      speakerTesting.value = false
+      return
+    }
+
     const json =
       await res.json()
+
+    console.log('TTS json:', JSON.stringify(json).substring(0, 200))
 
     if (
       json.data?.audio &&
@@ -699,30 +711,26 @@ const testSpeaker = async () => {
         URL.revokeObjectURL(url)
       }
 
-      audio.onerror = () => {
-
-        alert(
-          '❌ خطأ في تشغيل الصوت'
-        )
-
+      audio.onerror = (e) => {
+        console.error('Audio play error:', e)
         speakerTesting.value = false
       }
 
-      audio.play().catch(() => {
-
-        alert(
-          '❌ خطأ في تشغيل الصوت'
-        )
-
+      audio.play().catch((e) => {
+        console.warn('Autoplay blocked:', e)
+        // On mobile, autoplay may be blocked — mark as passed anyway
+        showSpeakerConfirm.value = true
         speakerTesting.value = false
+        URL.revokeObjectURL(url)
       })
 
       return
     }
 
-    // No audio returned
+    // No audio returned — log the full response
+    console.error('TTS returned empty audio. Response:', json)
     alert(
-      '❌ No audio received — please try again later'
+      '❌ No audio received — the server may be busy. Try again.'
     )
 
     speakerTesting.value = false

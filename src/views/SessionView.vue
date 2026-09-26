@@ -596,12 +596,16 @@ const speakAloud = async (text, audioBase64, audioFormat) => {
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ text }),
     })
+    if (!res.ok) {
+      console.error('TTS response not ok:', res.status, res.statusText)
+    }
     const json = await res.json()
     if (json.data?.audio && json.data.audio_format === 'mp3') {
       playAudioBlob(base64ToBlob(json.data.audio, 'audio/mpeg'))
       return
     }
-  } catch (e) { console.warn('TTS fetch failed:', e) }
+    console.warn('TTS returned no audio:', json)
+  } catch (e) { console.error('TTS fetch failed:', e.message || e) }
 
   // Really no audio — show message briefly then reset
   setTimeout(() => { ahmadSpeaking.value = false; status.value = 'ready'; isAudioBusy = false }, 2000)
