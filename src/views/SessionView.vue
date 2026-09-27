@@ -219,9 +219,11 @@
       <div class="mic-area">
         <div class="mic-ring" :class="micRingClass"></div>
         <button class="mic-btn" :class="{ active: isRecording, disabled: !canRecord }"
-          @mousedown="startRecording" @mouseup="stopRecording"
-          @touchstart.prevent="startRecording" @touchend.prevent="stopRecording" @touchcancel.prevent="stopRecording"
-          :disabled="!canRecord">🎤</button>
+          @click="toggleRecording"
+          :disabled="!canRecord"
+          :title="isRecording ? 'Click to stop & send' : 'Click to speak'">
+          {{ isRecording ? '⏹️' : '🎤' }}
+        </button>
         <span class="mic-status">{{ statusText }}</span>
       </div>
 
@@ -362,13 +364,13 @@ const micRingClass = computed(() => {
 
 const statusText = computed(() => {
   if (ahmadSpeaking.value) return '🔊 Ahmad is speaking...'
-  if (isRecording.value) return '🎧 Ahmad is listening...'
+  if (isRecording.value) return '🎧 Listening... (Tap to send)'
   if (status.value === 'processing') return '🤔 Ahmad is thinking...'
-  if (currentPhase.value === 'intro') return '🎤 Hold to speak'
+  if (currentPhase.value === 'intro') return '🎤 Tap to speak'
   if (currentPhase.value === 'vocab') return '📖 Practice the words above'
   if (currentPhase.value === 'feedback') return '📊 Review your performance'
   if (currentPhase.value === 'closing') return '🎉 Well done!'
-  return '🎤 Hold to speak'
+  return '🎤 Tap to speak'
 })
 
 // Learning goals per scenario
@@ -444,60 +446,31 @@ const scenarioContexts = {
 }
 
 // ═══ SPEECH RECOGNITION ═══
-let recognition = null
+let activeRecognition = null
+let currentTranscript = ''
+let lastConfidence = 0.9
+
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
-if (SR) {
-  recognition = new SR()
-  recognition.lang = 'en-US'
-  recognition.continuous = !isMobile // continuous breaks on mobile
-  recognition.interimResults = true
-  recognition.onresult = (e) => {
-    let finalText = ''
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalText += e.results[i][0].transcript
-    }
-    if (finalText) sendToAhmad(finalText, e.results[e.results.length - 1][0].confidence)
-  }
-  recognition.onerror = (e) => {
-    console.warn('Speech recognition error:', e.error)
-    // On mobile, auto-restart on 'no-speech' error if we were recording
-    if (isMobile && e.error === 'no-speech' && isRecording.value) {
-      try { recognition.start() } catch(err) {}
-      return  // Don't reset state, keep recording
-    }
-    isRecording.value = false; status.value = 'ready'
-  }
-  recognition.onend = () => {
-    // On mobile (continuous=false), restart if still recording
-    if (isMobile && isRecording.value) {
-      try { recognition.start() } catch(e) {}
-    }
+const stopRecognitionInstance = () => {
+  if (activeRecognition) {
+    try {
+      activeRecognition.abort()
+    } catch (e) {}
+    activeRecognition = null
   }
 }
 
-// Pre-request mic permission on mobile so getUserMedia doesn't block during hold
-let micPermissionGranted = false
-if (isMobile) {
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    stream.getTracks().forEach(t => t.stop())  // Release immediately
-    micPermissionGranted = true
-  }).catch(() => {})
-}
-
-let recordingStarting = false  // Guard against race condition on mobile
+let recordingStarting = false
 
 const startRecording = async () => {
-  if (!canRecord.value || recordingStarting) return
+  if (!canRecord.value || recordingStarting || isRecording.value) return
   recordingStarting = true
 
-  // Request mic permission — but release the stream immediately!
-  // On mobile, getUserMedia and SpeechRecognition CANNOT share the mic.
-  // We only call getUserMedia to trigger the permission prompt if needed.
+  // Request mic permission & release immediately so SpeechRecognition can use it
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    stream.getTracks().forEach(t => t.stop())  // Release mic immediately!
+    stream.getTracks().forEach(t => t.stop())
   } catch (e) {
     console.error('Mic permission denied:', e)
     alert('Please allow microphone access to continue')
@@ -505,17 +478,95 @@ const startRecording = async () => {
     return
   }
 
-  isRecording.value = true; status.value = 'listening'; feedbackCard.value = null
-  recordingStarting = false
-  try { recognition?.start() } catch(e) { console.warn('Recognition start failed:', e) }
+  if (!SR) {
+    alert('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.')
+    recordingStarting = false
+    return
+  }
+
+  stopRecognitionInstance()
+  currentTranscript = ''
+  lastConfidence = 0.9
+
+  try {
+    const rec = new SR()
+    rec.lang = 'en-US'
+    rec.continuous = false // Auto-stops when student finishes speaking (silence detection)
+    rec.interimResults = true
+
+    rec.onresult = (e) => {
+      let finalStr = ''
+      let interimStr = ''
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalStr += e.results[i][0].transcript + ' '
+          if (e.results[i][0].confidence) {
+            lastConfidence = e.results[i][0].confidence
+          }
+        } else {
+          interimStr += e.results[i][0].transcript
+        }
+      }
+      currentTranscript = (finalStr || interimStr).trim()
+    }
+
+    rec.onerror = (e) => {
+      console.warn('Speech recognition error:', e.error)
+      isRecording.value = false
+      if (status.value === 'listening') {
+        status.value = 'ready'
+      }
+    }
+
+    rec.onend = () => {
+      isRecording.value = false
+      const textToSend = currentTranscript.trim()
+      currentTranscript = ''
+      if (textToSend) {
+        sendToAhmad(textToSend, lastConfidence)
+      } else {
+        if (status.value === 'listening') {
+          status.value = 'ready'
+        }
+      }
+    }
+
+    activeRecognition = rec
+    isRecording.value = true
+    status.value = 'listening'
+    feedbackCard.value = null
+    recordingStarting = false
+    rec.start()
+  } catch (err) {
+    console.warn('Recognition start failed:', err)
+    recordingStarting = false
+    isRecording.value = false
+    if (status.value === 'listening') status.value = 'ready'
+  }
 }
+
 const stopRecording = () => {
-  // On mobile, if the recording hasn't actually started yet (getUserMedia still pending), ignore
-  if (recordingStarting) return
   if (!isRecording.value) return
   isRecording.value = false
-  try { recognition?.stop() } catch(e) {}
-  if (status.value === 'listening') status.value = 'ready'
+  if (activeRecognition) {
+    try {
+      activeRecognition.stop()
+    } catch (e) {
+      stopRecognitionInstance()
+      if (status.value === 'listening') status.value = 'ready'
+    }
+  } else {
+    if (status.value === 'listening') status.value = 'ready'
+  }
+}
+
+const toggleRecording = () => {
+  if (!canRecord.value) return
+  if (isRecording.value) {
+    stopRecording()
+  } else {
+    startRecording()
+  }
 }
 
 const toggleTyping = () => { showTypingInput.value = !showTypingInput.value }
@@ -529,8 +580,10 @@ const sendTyped = () => {
 
 // ═══ CONVERSATION ═══
 const sendToAhmad = async (text, confidence) => {
-  status.value = 'processing'; isRecording.value = false
-  try { recognition?.stop() } catch(e) {}
+  if (!text || status.value === 'processing') return
+  status.value = 'processing'
+  isRecording.value = false
+  stopRecognitionInstance()
   try {
     const { data } = await speak(sessionId, text, confidence)
     const r = data || {}
@@ -796,7 +849,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  recognition?.stop()
+  stopRecognitionInstance()
   stopCurrentAudio()
   if (timerInterval) clearInterval(timerInterval)
   stopAvatar()

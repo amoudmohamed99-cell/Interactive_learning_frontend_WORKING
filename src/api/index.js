@@ -17,6 +17,20 @@ api.interceptors.request.use(config => {
   return config
 })
 
+// Redirect to login on 401 (expired/invalid token)
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('student')
+      localStorage.removeItem('student_code')
+      window.location.href = '/'
+    }
+    return Promise.reject(error)
+  }
+)
+
 // Auth
 export const login = async (code) => {
   const { data } = await api.post('/auth/login', { code })
