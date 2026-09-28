@@ -216,15 +216,15 @@
         <div v-for="i in 6" :key="'l'+i" class="wave-bar" :style="{ animationDelay: (i * 0.06) + 's' }"></div>
       </div>
 
-      <div class="mic-area" v-if="currentPhase === 'conversation'">
+      <div class="mic-area">
         <div class="mic-ring" :class="micRingClass"></div>
-        <button class="mic-btn" :class="{ active: isRecording, disabled: !canRecord }"
+        <button class="mic-btn" :class="{ active: isRecording, disabled: !canRecord || currentPhase !== 'conversation' }"
           @click="toggleRecording"
-          :disabled="!canRecord"
-          :title="isRecording ? 'Click to stop & send' : 'Click to speak'">
+          :disabled="!canRecord || currentPhase !== 'conversation'"
+          :title="currentPhase !== 'conversation' ? 'Available during conversation' : isRecording ? 'Click to stop & send' : 'Click to speak'">
           {{ isRecording ? '⏹️' : '🎤' }}
         </button>
-        <span class="mic-status">{{ statusText }}</span>
+        <span class="mic-status">{{ currentPhase !== 'conversation' ? '' : statusText }}</span>
       </div>
 
       <div v-if="isRecording && currentPhase === 'conversation'" class="waveform">
@@ -359,6 +359,15 @@ watch(simliConnected, (connected) => {
     })
   } else {
     stopChromaKey()
+  }
+})
+
+// When Simli stops speaking, update UI state
+watch(simliSpeaking, (speaking) => {
+  if (!speaking && ahmadSpeaking.value && simliConnected.value) {
+    ahmadSpeaking.value = false
+    status.value = 'ready'
+    isAudioBusy = false
   }
 })
 
@@ -627,7 +636,7 @@ const sendToAhmad = async (text, confidence) => {
     if (r.feedback_type && r.feedback_type !== 'none') showFeedbackCardFn(r)
     if (r.reply || r.text) {
       ahmadLastMessage.value = r.reply || r.text
-      await speakAloud(r.reply || r.text, r.audio, r.audio_format)
+      speakAloud(r.reply || r.text, r.audio, r.audio_format)
     } else {
       status.value = 'ready'
     }
@@ -662,19 +671,16 @@ const showFeedbackCardFn = (r) => {
 // ═══ AUDIO PLAYBACK ═══
 let isAudioBusy = false
 
-const stopCurrentAudio = (forceStopSimli = false) => {
+const stopCurrentAudio = () => {
   if (currentAudio) {
     currentAudio.pause()
     currentAudio.currentTime = 0
     currentAudio.src = ''
     currentAudio = null
   }
-  // Only stop Simli audio when explicitly requested (e.g. ending session)
-  // Otherwise let Simli keep playing — it's the synced audio+lip source
-  if (forceStopSimli && simliAudioRef.value) {
-    simliAudioRef.value.pause()
-    simliAudioRef.value.currentTime = 0
-  }
+  // Do NOT pause simliAudioRef — Simli outputs synced audio+video through it.
+  // Pausing it kills the audio while lips keep moving.
+  // Use simliClient.ClearBuffer() to stop Simli from talking instead.
   window.speechSynthesis?.cancel()
   ahmadSpeaking.value = false
 }
@@ -689,34 +695,12 @@ const speakAloud = async (text, audioBase64, audioFormat) => {
   status.value = 'speaking'
   ahmadLastMessage.value = text
 
-  const playAudioBlob = async (blob) => {
+  const playAudioBlob = (blob) => {
     if (simliConnected.value) {
-      // ═══ Simli connected: let Simli handle BOTH audio + lip-sync ═══
-      // Don't play local Audio() — Simli plays audio via <audio ref="simliAudioRef">
-      // This ensures audio and lip movement come from the SAME source = perfect sync
-      await sendAudioToSimli(blob)
-
-      // Wait for Simli to finish speaking (via 'silent' event from useSimli)
-      await new Promise((resolve) => {
-        // Give Simli a moment to start speaking before we begin checking
-        setTimeout(() => {
-          const checkInterval = setInterval(() => {
-            if (!simliSpeaking.value) {
-              clearInterval(checkInterval)
-              resolve()
-            }
-          }, 200)
-          // Safety timeout: estimate duration from blob size + 3s buffer
-          // PCM16 @ 16KHz = 32000 bytes/sec → approximate MP3 duration
-          const estimatedMs = (blob.size / 4000) * 1000 + 3000
-          setTimeout(() => { clearInterval(checkInterval); resolve() }, estimatedMs)
-        }, 500)
-      })
-
-      ahmadSpeaking.value = false
-      status.value = 'ready'
-      isAudioBusy = false
-
+      // ═══ Simli handles BOTH audio + lip-sync (synced via WebRTC) ═══
+      // Don't play local Audio() — Simli outputs audio through <audio ref="simliAudioRef">
+      // and video through <video ref="simliVideoRef"> — both synced from same source.
+      sendAudioToSimli(blob)
     } else {
       // ═══ Simli NOT connected: local playback fallback ═══
       const url = URL.createObjectURL(blob)
@@ -787,8 +771,8 @@ const sendAudioToSimli = async (audioBlob) => {
       pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
     }
 
-    // ═══ FIX 2 + 3: Pad last chunk + throttle sending ═══
-    const chunkSize = 6400 // 3200 samples × 2 bytes = 200ms @ 16KHz
+    // ═══ FIX 2: Pad last chunk + send all immediately ═══
+    const chunkSize = 6400
     for (let i = 0; i < pcm16.length; i += chunkSize) {
       const end = Math.min(i + chunkSize, pcm16.length)
       let chunk = pcm16.slice(i, end)
@@ -801,16 +785,7 @@ const sendAudioToSimli = async (audioBlob) => {
       }
 
       simliSendAudio(new Uint8Array(chunk.buffer))
-
-      // Throttle: small delay between chunks to prevent buffer overflow
-      // Send at ~2x real-time (100ms delay per 200ms chunk)
-      if (i + chunkSize < pcm16.length) {
-        await new Promise(r => setTimeout(r, 100))
-      }
     }
-
-    // Let processing finish before closing context
-    await new Promise(r => setTimeout(r, 100))
     audioCtx.close()
   } catch (e) {
     console.error('Simli audio send failed:', e)
@@ -851,7 +826,7 @@ let isAdvancing = false
 const doAdvancePhase = async () => {
   if (isAdvancing) return // Prevent double-click
   isAdvancing = true
-  stopCurrentAudio(true)
+  stopCurrentAudio()
   try {
     const { data } = await apiAdvancePhase(sessionId)
     const r = data || {}
@@ -949,7 +924,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopRecognitionInstance()
-  stopCurrentAudio(true)
+  stopCurrentAudio()
   if (timerInterval) clearInterval(timerInterval)
   stopAvatar()
   stopChromaKey()
