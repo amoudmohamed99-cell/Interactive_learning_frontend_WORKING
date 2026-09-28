@@ -292,14 +292,45 @@ let pendingIntro = null // { msg, audio, format }
 
 const dismissWelcome = () => {
   showWelcome.value = false
-  // Play greeting as soon as user enters session
+
+  // ═══ Chrome Autoplay Fix: unlock audio element on user gesture ═══
+  if (simliAudioRef.value) {
+    // Silent play attempt unlocks the audio element for future Simli playback
+    const unlockPromise = simliAudioRef.value.play()
+    if (unlockPromise) unlockPromise.catch(() => {})
+  }
+  // Also unlock AudioContext (needed for decodeAudioData)
+  try {
+    const tempCtx = new (window.AudioContext || window.webkitAudioContext)()
+    tempCtx.resume().then(() => tempCtx.close()).catch(() => {})
+  } catch (e) {}
+
+  // Play greeting — but wait for Simli if it's not connected yet
   if (pendingIntro) {
     const { msg, audio, format } = pendingIntro
     pendingIntro = null
-    // Small delay for fade transition
-    setTimeout(() => {
-      speakAloud(msg, audio, format)
-    }, 300)
+
+    const playIntro = () => {
+      setTimeout(() => speakAloud(msg, audio, format), 300)
+    }
+
+    if (simliConnected.value) {
+      // Simli ready — play immediately
+      playIntro()
+    } else {
+      // ═══ Race Condition Fix: wait for Simli connection ═══
+      const unwatch = watch(simliConnected, (connected) => {
+        if (connected) {
+          unwatch()
+          playIntro()
+        }
+      })
+      // Fallback: if Simli doesn't connect in 3s, play locally anyway
+      setTimeout(() => {
+        unwatch()
+        if (!simliConnected.value) playIntro()
+      }, 3000)
+    }
   }
 
   // Auto-advance: intro → vocab after Ahmad finishes greeting
@@ -596,7 +627,7 @@ const sendToAhmad = async (text, confidence) => {
     if (r.feedback_type && r.feedback_type !== 'none') showFeedbackCardFn(r)
     if (r.reply || r.text) {
       ahmadLastMessage.value = r.reply || r.text
-      speakAloud(r.reply || r.text, r.audio, r.audio_format)
+      await speakAloud(r.reply || r.text, r.audio, r.audio_format)
     } else {
       status.value = 'ready'
     }
@@ -631,15 +662,16 @@ const showFeedbackCardFn = (r) => {
 // ═══ AUDIO PLAYBACK ═══
 let isAudioBusy = false
 
-const stopCurrentAudio = () => {
+const stopCurrentAudio = (forceStopSimli = false) => {
   if (currentAudio) {
     currentAudio.pause()
     currentAudio.currentTime = 0
     currentAudio.src = ''
     currentAudio = null
   }
-  // Also stop Simli audio to prevent double playback
-  if (simliAudioRef.value) {
+  // Only stop Simli audio when explicitly requested (e.g. ending session)
+  // Otherwise let Simli keep playing — it's the synced audio+lip source
+  if (forceStopSimli && simliAudioRef.value) {
     simliAudioRef.value.pause()
     simliAudioRef.value.currentTime = 0
   }
@@ -657,19 +689,46 @@ const speakAloud = async (text, audioBase64, audioFormat) => {
   status.value = 'speaking'
   ahmadLastMessage.value = text
 
-  const playAudioBlob = (blob) => {
-    const url = URL.createObjectURL(blob)
-    currentAudio = new Audio(url)
-    currentAudio.onended = () => { ahmadSpeaking.value = false; status.value = 'ready'; URL.revokeObjectURL(url); currentAudio = null; isAudioBusy = false }
-    currentAudio.onerror = () => { ahmadSpeaking.value = false; status.value = 'ready'; URL.revokeObjectURL(url); currentAudio = null; isAudioBusy = false }
-    currentAudio.play().catch(() => { ahmadSpeaking.value = false; status.value = 'ready'; isAudioBusy = false })
+  const playAudioBlob = async (blob) => {
+    if (simliConnected.value) {
+      // ═══ Simli connected: let Simli handle BOTH audio + lip-sync ═══
+      // Don't play local Audio() — Simli plays audio via <audio ref="simliAudioRef">
+      // This ensures audio and lip movement come from the SAME source = perfect sync
+      await sendAudioToSimli(blob)
 
-    // Send to Simli for lip sync if connected
-    if (simliConnected.value) sendAudioToSimli(blob)
+      // Wait for Simli to finish speaking (via 'silent' event from useSimli)
+      await new Promise((resolve) => {
+        // Give Simli a moment to start speaking before we begin checking
+        setTimeout(() => {
+          const checkInterval = setInterval(() => {
+            if (!simliSpeaking.value) {
+              clearInterval(checkInterval)
+              resolve()
+            }
+          }, 200)
+          // Safety timeout: estimate duration from blob size + 3s buffer
+          // PCM16 @ 16KHz = 32000 bytes/sec → approximate MP3 duration
+          const estimatedMs = (blob.size / 4000) * 1000 + 3000
+          setTimeout(() => { clearInterval(checkInterval); resolve() }, estimatedMs)
+        }, 500)
+      })
+
+      ahmadSpeaking.value = false
+      status.value = 'ready'
+      isAudioBusy = false
+
+    } else {
+      // ═══ Simli NOT connected: local playback fallback ═══
+      const url = URL.createObjectURL(blob)
+      currentAudio = new Audio(url)
+      currentAudio.onended = () => { ahmadSpeaking.value = false; status.value = 'ready'; URL.revokeObjectURL(url); currentAudio = null; isAudioBusy = false }
+      currentAudio.onerror = () => { ahmadSpeaking.value = false; status.value = 'ready'; URL.revokeObjectURL(url); currentAudio = null; isAudioBusy = false }
+      currentAudio.play().catch(() => { ahmadSpeaking.value = false; status.value = 'ready'; isAudioBusy = false })
+    }
   }
 
   if (audioBase64 && audioFormat === 'mp3') {
-    playAudioBlob(base64ToBlob(audioBase64, 'audio/mpeg'))
+    await playAudioBlob(base64ToBlob(audioBase64, 'audio/mpeg'))
     return
   }
 
@@ -686,7 +745,7 @@ const speakAloud = async (text, audioBase64, audioFormat) => {
     }
     const json = await res.json()
     if (json.data?.audio && json.data.audio_format === 'mp3') {
-      playAudioBlob(base64ToBlob(json.data.audio, 'audio/mpeg'))
+      await playAudioBlob(base64ToBlob(json.data.audio, 'audio/mpeg'))
       return
     }
     console.warn('TTS returned no audio:', json)
@@ -699,22 +758,62 @@ const speakAloud = async (text, audioBase64, audioFormat) => {
 const sendAudioToSimli = async (audioBlob) => {
   try {
     const arrayBuffer = await audioBlob.arrayBuffer()
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 })
+
+    // Use default sample rate — Chrome may ignore requested 16KHz
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer)
-    const floatData = audioBuffer.getChannelData(0)
+    const originalData = audioBuffer.getChannelData(0)
+    const originalRate = audioBuffer.sampleRate
+    const targetRate = 16000
+
+    // ═══ FIX 1: Manual resample to 16KHz if browser decoded at different rate ═══
+    let floatData
+    if (Math.abs(originalRate - targetRate) > 100) {
+      const ratio = originalRate / targetRate
+      const newLength = Math.floor(originalData.length / ratio)
+      floatData = new Float32Array(newLength)
+      for (let i = 0; i < newLength; i++) {
+        floatData[i] = originalData[Math.min(Math.floor(i * ratio), originalData.length - 1)]
+      }
+      console.log(`Simli: Resampled ${originalRate}Hz → ${targetRate}Hz (${originalData.length} → ${floatData.length} samples)`)
+    } else {
+      floatData = originalData
+    }
+
+    // Float32 → PCM16
     const pcm16 = new Int16Array(floatData.length)
     for (let i = 0; i < floatData.length; i++) {
       const s = Math.max(-1, Math.min(1, floatData[i]))
       pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
     }
-    const chunkSize = 6400
+
+    // ═══ FIX 2 + 3: Pad last chunk + throttle sending ═══
+    const chunkSize = 6400 // 3200 samples × 2 bytes = 200ms @ 16KHz
     for (let i = 0; i < pcm16.length; i += chunkSize) {
-      const chunk = pcm16.slice(i, i + chunkSize)
+      const end = Math.min(i + chunkSize, pcm16.length)
+      let chunk = pcm16.slice(i, end)
+
+      // Pad the last chunk with silence so Simli doesn't drop it
+      if (chunk.length < chunkSize) {
+        const padded = new Int16Array(chunkSize)
+        padded.set(chunk)
+        chunk = padded
+      }
+
       simliSendAudio(new Uint8Array(chunk.buffer))
+
+      // Throttle: small delay between chunks to prevent buffer overflow
+      // Send at ~2x real-time (100ms delay per 200ms chunk)
+      if (i + chunkSize < pcm16.length) {
+        await new Promise(r => setTimeout(r, 100))
+      }
     }
+
+    // Let processing finish before closing context
+    await new Promise(r => setTimeout(r, 100))
     audioCtx.close()
   } catch (e) {
-    console.error('Simli audio failed:', e)
+    console.error('Simli audio send failed:', e)
   }
 }
 
@@ -752,7 +851,7 @@ let isAdvancing = false
 const doAdvancePhase = async () => {
   if (isAdvancing) return // Prevent double-click
   isAdvancing = true
-  stopCurrentAudio()
+  stopCurrentAudio(true)
   try {
     const { data } = await apiAdvancePhase(sessionId)
     const r = data || {}
@@ -850,7 +949,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopRecognitionInstance()
-  stopCurrentAudio()
+  stopCurrentAudio(true)
   if (timerInterval) clearInterval(timerInterval)
   stopAvatar()
   stopChromaKey()
