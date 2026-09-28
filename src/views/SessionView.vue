@@ -212,11 +212,11 @@
     <footer class="control-bar">
       <div class="cb-left-area"></div>
 
-      <div v-if="isRecording" class="waveform">
+      <div v-if="isRecording && currentPhase === 'conversation'" class="waveform">
         <div v-for="i in 6" :key="'l'+i" class="wave-bar" :style="{ animationDelay: (i * 0.06) + 's' }"></div>
       </div>
 
-      <div class="mic-area">
+      <div class="mic-area" v-if="currentPhase === 'conversation'">
         <div class="mic-ring" :class="micRingClass"></div>
         <button class="mic-btn" :class="{ active: isRecording, disabled: !canRecord }"
           @click="toggleRecording"
@@ -227,7 +227,7 @@
         <span class="mic-status">{{ statusText }}</span>
       </div>
 
-      <div v-if="isRecording" class="waveform">
+      <div v-if="isRecording && currentPhase === 'conversation'" class="waveform">
         <div v-for="i in 6" :key="'r'+i" class="wave-bar" :style="{ animationDelay: (i * 0.06) + 's' }"></div>
       </div>
 
@@ -383,7 +383,7 @@ const phaseLabel = computed(() => {
 })
 
 const canRecord = computed(() => {
-  return !ahmadSpeaking.value && status.value !== 'processing' && (currentPhase.value === 'conversation' || currentPhase.value === 'intro')
+  return !ahmadSpeaking.value && status.value !== 'processing' && currentPhase.value === 'conversation'
 })
 
 const micRingClass = computed(() => {
