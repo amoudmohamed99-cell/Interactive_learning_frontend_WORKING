@@ -2,21 +2,21 @@
   <div class="complete-page">
     <div class="complete-card">
       <div class="success-icon">🎉</div>
-      <h1>أحسنت! أنهيت الجلسة</h1>
-      <p class="subtitle">ممتاز! كل مرة بتتحسن أكتر 💪</p>
+     <h1>Great job! You completed the session</h1>
+<p class="subtitle">Great! You’re getting better every time 💪</p>
 
 <div class="stats">
   <div class="stat-item">
     <span class="stat-icon">💬</span>
     <span class="stat-value">{{ stats.turns }}</span>
-    <span class="stat-label">أدوار حوارية</span>
+    <span class="stat-label">Conversation Turns</span>
   </div>
 
-  <div class="stat-item">
-    <span class="stat-icon">⏱️</span>
-    <span class="stat-value">{{ stats.duration }}</span>
-    <span class="stat-label">مدة الجلسة</span>
-  </div>
+<div class="stat-item">
+  <span class="stat-icon">⏱️</span>
+  <span class="stat-value">{{ stats.duration }}</span>
+  <span class="stat-label">Session Duration</span>
+</div>
 </div>
 
 <div class="session-message">
@@ -28,7 +28,7 @@
 </div>
 
       <button @click="router.push('/scenarios')" class="back-btn">
-        ← ارجع للسيناريوهات
+Back to Scenarios
       </button>
     </div>
   </div>
