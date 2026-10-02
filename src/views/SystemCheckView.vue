@@ -20,12 +20,12 @@
           </div>
         </div>
 
-        <button
-          class="logout-btn"
-          @click="handleLogout"
-        >
-          خروج
-        </button>
+<button
+  class="logout-btn"
+  @click="handleLogout"
+>
+  Log out
+</button>
 
       </div>
 

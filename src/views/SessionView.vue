@@ -387,7 +387,13 @@ const currentBg = computed(() => {
 })
 
 const phaseLabel = computed(() => {
-  const labels = { intro: 'التهيئة', vocab: 'المدخل اللغوي', conversation: 'المحادثة الموجهة', feedback: 'التغذية الراجعة', closing: 'الخلاصة والتأمل' }
+  const labels = {
+    intro: 'Introduction',
+    vocab: 'Vocabulary',
+    conversation: 'Guided Conversation',
+    feedback: 'Feedback',
+    closing: 'Summary & Reflection'
+  }
   return labels[currentPhase.value] || currentPhase.value
 })
 
@@ -931,8 +937,8 @@ onUnmounted(() => {
 })
 
 const handleEnd = async () => {
-  if (confirm('هل أنت متأكد من إنهاء الجلسة؟')) {
-    localStorage.setItem('last_turns', String(performanceStats.value.totalTurns))
+if (confirm('Are you sure you want to end the session?')) {
+      localStorage.setItem('last_turns', String(performanceStats.value.totalTurns))
     const elapsed = (40 * 60) - remainingTotal.value
     localStorage.setItem('last_duration', `${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}`)
     try {

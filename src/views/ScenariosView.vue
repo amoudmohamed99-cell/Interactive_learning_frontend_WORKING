@@ -20,12 +20,12 @@
       </div>
     </div>
 
-    <button
-      class="logout-btn"
-      @click="handleLogout"
-    >
-      خروج
-    </button>
+<button
+  class="logout-btn"
+  @click="handleLogout"
+>
+  Log out
+</button>
 
   </div>
 
@@ -140,9 +140,9 @@
       >
         <div class="loading-spinner"></div>
 
-        <p>
-          جاري تحميل الجلسات...
-        </p>
+<p>
+  Loading sessions...
+</p>
       </div>
 
 
@@ -199,9 +199,7 @@
               {{ scenario.title }}
             </h3>
 
-            <p class="title-ar">
-              {{ scenario.title_ar }}
-            </p>
+          
 
             <p class="scenario-description">
               {{ getScenarioDescription(scenario.number) }}
@@ -210,22 +208,14 @@
           </div>
 
 
-          <!-- Meta -->
-          <div class="scenario-meta">
-
-            <span>
-              {{ scenario.topic }}
-            </span>
-
-            <span class="meta-dot">
-              •
-            </span>
-
-            <span>
-              {{ scenario.communicative_function }}
-            </span>
-
-          </div>
+<!-- Meta --> 
+<div class="scenario-meta"> 
+ 
+  <span> 
+    {{ scenario.topic }} 
+  </span> 
+ 
+</div>
 
 
           <!-- Footer -->
@@ -333,7 +323,7 @@ const student = JSON.parse(
 )
 
 const studentName =
-  student.code || 'طالب'
+  student.code || 'Student'
 
 
 /* =========================
