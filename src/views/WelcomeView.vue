@@ -25,9 +25,7 @@
           Sessions
         </button>
 
-        <button class="nav-item">Progress</button>
-        <button class="nav-item">Tips</button>
-        <button class="nav-item">About</button>
+
       </nav>
 
       <div class="header-actions">
@@ -70,9 +68,7 @@
         <div v-if="mobileMenuOpen" class="mobile-dropdown">
           <button class="m-nav-item active" @click="mobileMenuOpen = false">🏠 Home</button>
           <button class="m-nav-item" @click="goToScenarios(); mobileMenuOpen = false">💬 Sessions</button>
-          <button class="m-nav-item" @click="mobileMenuOpen = false">📊 Progress</button>
-          <button class="m-nav-item" @click="mobileMenuOpen = false">💡 Tips</button>
-          <button class="m-nav-item" @click="mobileMenuOpen = false">ℹ️ About</button>
+
           <div class="m-divider"></div>
           <div class="m-footer">
             <span class="m-student">👤 {{ studentName }}</span>
