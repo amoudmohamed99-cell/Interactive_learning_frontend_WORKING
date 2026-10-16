@@ -215,7 +215,7 @@
                 passed: micPassed
               }"
               @click="testMic"
-              :disabled="micPassed"
+              :disabled="micPassed || micTesting"
             >
 
               <span class="btn-icon">
@@ -327,6 +327,7 @@
               @click="testSpeaker"
               :disabled="
                 speakerPassed ||
+                speakerTesting ||
                 !micPassed
               "
             >
@@ -495,6 +496,8 @@ const handleLogout = () => {
    MICROPHONE TEST
 ========================= */
 
+const MAX_MIC_RETRIES = 3
+
 const testMic = async () => {
 
   micTesting.value = true
@@ -508,7 +511,7 @@ const testMic = async () => {
         audio: true
       })
 
-    // Step 2: Release mic immediately so SpeechRecognition can use it
+    // Step 2: Release mic
     stream.getTracks().forEach(t => t.stop())
 
     const SpeechRecognition =
@@ -516,97 +519,175 @@ const testMic = async () => {
       window.webkitSpeechRecognition
 
     if (!SpeechRecognition) {
-
+      // Browser doesn't support SpeechRecognition — mic permission was enough
       micResult.value = {
         ok: true,
         message: 'Microphone is working ✅'
       }
-
       micPassed.value = true
       micTesting.value = false
-
       return
     }
 
-    const recognition =
-      new SpeechRecognition()
+    // Try recognition with auto-retry on transient errors
+    let lastError = null
 
-    recognition.lang = 'en-US'
-    recognition.continuous = false
+    for (let attempt = 1; attempt <= MAX_MIC_RETRIES; attempt++) {
 
-    recognition.onresult = (e) => {
+      // Wait before each attempt to let the OS release the mic
+      await new Promise(r => setTimeout(r, 300))
 
-      const text =
-        e.results[0][0].transcript
+      const result = await _attemptRecognition(SpeechRecognition)
 
-      const confidence =
-        e.results[0][0].confidence
-
-      micResult.value = {
-        ok: true,
-        message:
-          `✅ Heard: "${text}" — ${Math.round(confidence * 100)}%`
+      if (result.success) {
+        // Got valid speech
+        micResult.value = {
+          ok: true,
+          message: result.message
+        }
+        micPassed.value = true
+        micTesting.value = false
+        return
       }
 
-      micPassed.value = true
-      micTesting.value = false
-    }
-
-    recognition.onerror = (e) => {
-      console.warn('Mic test error:', e.error)
-      // 'no-speech' means mic works but no speech detected
-      if (e.error === 'no-speech') {
-        micResult.value = {
-          ok: false,
-          message: '⚠️ No speech detected. Speak louder and try again'
-        }
-      } else {
-        micResult.value = {
-          ok: false,
-          message: '⚠️ Could not capture audio. Try again'
-        }
-      }
-      micTesting.value = false
-    }
-
-    recognition.onend = () => {
-
-      if (
-        !micPassed.value &&
-        !micResult.value
-      ) {
-
-        micResult.value = {
-          ok: false,
-          message:
-            '⚠️ No speech detected. Speak louder and try again'
-        }
-
+      if (result.retry && attempt < MAX_MIC_RETRIES) {
+        // Transient error — retry silently
+        console.log(`Mic test attempt ${attempt} failed (${result.errorType}), retrying...`)
+        lastError = result
+        continue
       }
 
-      micTesting.value = false
+      // Non-retryable error or last attempt
+      lastError = result
+      break
     }
 
-    setTimeout(() => {
-
-      try {
-        recognition.stop()
-      } catch (e) {}
-
-    }, 7000) // Give mobile users more time (was 5s)
-
-    recognition.start()
+    // All attempts failed — show the error
+    micResult.value = {
+      ok: false,
+      message: lastError?.message || '⚠️ Could not capture audio. Try again'
+    }
+    micTesting.value = false
 
   } catch (e) {
+
+    console.error('Mic access error:', e)
 
     micResult.value = {
       ok: false,
       message:
-        '❌ لا يمكن الوصول للميكروفون'
+        '❌ Cannot access microphone. Please check permissions and try again'
     }
 
     micTesting.value = false
   }
+}
+
+
+/**
+ * Single attempt at SpeechRecognition.
+ * Returns a Promise that resolves with:
+ *   { success: true, message }           — heard valid speech
+ *   { success: false, retry, message }   — failed (retry = true for transient errors)
+ */
+const _attemptRecognition = (SpeechRecognition) => {
+  return new Promise((resolve) => {
+
+    const recognition = new SpeechRecognition()
+
+    recognition.lang = 'en-US'
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+
+    let settled = false
+
+    const finish = (result) => {
+      if (settled) return
+      settled = true
+      try { recognition.stop() } catch (_) {}
+      resolve(result)
+    }
+
+    recognition.onresult = (e) => {
+      const text = e.results[0][0].transcript.trim()
+      const confidence = e.results[0][0].confidence
+
+      if (!text) {
+        finish({
+          success: false,
+          retry: true,
+          errorType: 'empty-transcript',
+          message: '⚠️ Could not understand. Please speak a clear English word and try again'
+        })
+        return
+      }
+
+      finish({
+        success: true,
+        message: `✅ Heard: "${text}" — ${Math.round(confidence * 100)}%`
+      })
+    }
+
+    recognition.onerror = (e) => {
+      console.warn('Mic test error:', e.error)
+
+      // Transient errors that are worth retrying
+      const retryableErrors = ['audio-capture', 'aborted', 'network']
+
+      if (e.error === 'no-speech') {
+        finish({
+          success: false,
+          retry: false,
+          errorType: e.error,
+          message: '⚠️ No speech detected. Speak louder and try again'
+        })
+      } else if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        finish({
+          success: false,
+          retry: false,
+          errorType: e.error,
+          message: '❌ Microphone permission denied. Please allow microphone access and try again'
+        })
+      } else if (retryableErrors.includes(e.error)) {
+        finish({
+          success: false,
+          retry: true,
+          errorType: e.error,
+          message: '⚠️ Could not capture audio. Make sure your microphone is connected and try again'
+        })
+      } else {
+        finish({
+          success: false,
+          retry: true,
+          errorType: e.error,
+          message: '⚠️ Could not capture audio. Try again'
+        })
+      }
+    }
+
+    recognition.onend = () => {
+      // If neither onresult nor onerror fired
+      finish({
+        success: false,
+        retry: false,
+        errorType: 'no-speech',
+        message: '⚠️ No speech detected. Speak louder and try again'
+      })
+    }
+
+    // Timeout safety net
+    setTimeout(() => {
+      finish({
+        success: false,
+        retry: false,
+        errorType: 'timeout',
+        message: '⚠️ No speech detected. Speak louder and try again'
+      })
+    }, 7000)
+
+    recognition.start()
+  })
 }
 
 

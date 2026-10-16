@@ -127,6 +127,7 @@
           <div class="cb-header">
             <span class="cb-name">Ahmad</span>
             <span v-if="ahmadSpeaking" class="cb-speaking">🔊</span>
+            <button v-if="!ahmadSpeaking && currentPhase === 'conversation'" class="replay-btn" @click="speakAloud(ahmadLastMessage)" title="Replay">🔁</button>
           </div>
           <p class="cb-text">{{ ahmadLastMessage }}</p>
         </div>
@@ -231,11 +232,7 @@
         <div v-for="i in 6" :key="'r'+i" class="wave-bar" :style="{ animationDelay: (i * 0.06) + 's' }"></div>
       </div>
 
-      <div class="cb-right-area">
-        <span class="phase-dots-mini">
-          <span v-for="p in phases" :key="'m'+p.key" class="pm" :class="{ current: p.is_current, done: p.is_done }"></span>
-        </span>
-      </div>
+      <div class="cb-right-area"></div>
     </footer>
 
     <!-- Typing input -->
@@ -1144,6 +1141,21 @@ if (confirm('Are you sure you want to end the session?')) {
 .cb-speaking {
   font-size: 16px;
   animation: pulse-s 1s infinite;
+}
+
+.replay-btn {
+  background: none;
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 8px;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+.replay-btn:hover {
+  opacity: 1;
+  background: rgba(59,130,246,0.1);
 }
 
 @keyframes pulse-s {

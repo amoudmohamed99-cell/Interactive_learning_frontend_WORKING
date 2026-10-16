@@ -29,6 +29,11 @@
 
   </div>
 
+  <!-- CENTER: NAV -->
+  <nav class="main-nav">
+    <button class="nav-item" @click="$router.push('/welcome')">Home</button>
+    <button class="nav-item active">Sessions</button>
+  </nav>
 
   <!-- RIGHT: BRAND -->
   <div class="brand">
@@ -572,6 +577,32 @@ const getScenarioDescription = (number) => {
   font-weight: 500;
 }
 
+.main-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-item {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-item:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+}
+
+.nav-item.active {
+  color: #fff;
+  background: rgba(255,255,255,0.12);
+}
 
 .student-area {
   display: flex;

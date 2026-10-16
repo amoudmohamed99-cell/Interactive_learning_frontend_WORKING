@@ -17,11 +17,11 @@ api.interceptors.request.use(config => {
   return config
 })
 
-// Redirect to login on 401 (expired/invalid token)
+// Redirect to login on 401 (expired/invalid token) — but NOT during login attempt
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && localStorage.getItem('token')) {
       localStorage.removeItem('token')
       localStorage.removeItem('student')
       localStorage.removeItem('student_code')
